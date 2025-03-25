@@ -2,15 +2,13 @@ import numpy as np
 import cv2
 import numpy as np
 from pdf2image import convert_from_path
+from groq import Groq
+from constants import *
 import pytesseract
+
 pytesseract.pytesseract.tesseract_cmd = r"C:\Users\Dell\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
 
-from groq import Groq
-
-# 🔑 Remplace TA_CLE_API_GROQ par ta clé API Groq
-groq_key = "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"
-
-client_groq = Groq(api_key=groq_key)
+client_groq = Groq(api_key=GROQ_API_KEY)
 
 def preprocess_image(image):
     """Améliorer la lisibilité pour l'OCR en appliquant un seuillage adaptatif."""
@@ -51,7 +49,7 @@ def extract_text_from_audio_video(pdf_path):
   with open(pdf_path, "rb") as file:
       transcription = client_groq.audio.transcriptions.create(
         file=(pdf_path, file.read()),
-        model="whisper-large-v3",
+        model=WHISPER,
         response_format="verbose_json",
       )
       return transcription.text
@@ -62,7 +60,7 @@ def clean_text_extracted_from_pdf(file_path, lang):
     text = extract_text_from_pdf(file_path, lang)
     if lang == "fr":
         completion = client_groq.chat.completions.create(
-            model="deepseek-r1-distill-llama-70b",
+            model=LLM_correction,
              messages=[
                 {
                   "role": "system",
@@ -94,7 +92,7 @@ def clean_text_extracted_from_pdf(file_path, lang):
 
     elif lang == "ar":
         completion = client_groq.chat.completions.create(
-            model="deepseek-r1-distill-llama-70b",
+            model=LLM_correction,
              messages=[
                 {
                 "role": "system",

@@ -5,35 +5,37 @@ from qdrant_client.models import VectorParams, Distance
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Qdrant
 from langchain.chains import RetrievalQA
-import os
+from constants import *
 
-#Mon compte qdrant
-TA_CLE_API="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.JDB8zdeJoArApKIDN-v3XZdpzXEp6BbE41jBwAWqtt0"
-client = QdrantClient("https://48a76f37-3da8-46da-a372-9c8f7cf6ca6d.us-west-2-0.aws.cloud.qdrant.io", api_key=TA_CLE_API)
+# Connexion à Qdrant avec les variables chargées
+client = QdrantClient(QDRANT_URL, api_key=QDRANT_API)
+
+# Modèles Groq
+llm1 = ChatGroq(groq_api_key=GROQ_API_KEY, model_name=LLM_NAME_1)
+llm2 = ChatGroq(groq_api_key=GROQ_API_KEY, model_name=LLM_NAME_2)
 
 
 # Charger le modèle d'embeddings
-embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+embedding_model = HuggingFaceEmbeddings(model_name=MODEL_EMBEDDING)
 
 # Récupérer la dimension du modèle
 vector_size = embedding_model.client.get_sentence_embedding_dimension()
 
 
-if not client.collection_exists("my_collection"):
+if not client.collection_exists(QDRANT_COLLECTION):
    client.create_collection(
-      collection_name="my_collection",
+      collection_name=QDRANT_COLLECTION,
       vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
    )
-
 
 # Ajouter les documents à Qdrant
 vectorstore = Qdrant(
     client=client,
-    collection_name="my_collection",
+    collection_name=QDRANT_COLLECTION,
     embeddings=embedding_model,
 )
 
-info = client.get_collection("my_collection")
+info = client.get_collection(QDRANT_COLLECTION)
 print(f"📊 Nombre de vecteurs enregistrés : {info.points_count}")
 
 
@@ -48,12 +50,6 @@ def process_and_store_file(file_path,lang):
     else:
         print(f"⚠️ Aucun texte extrait depuis {file_path} ❌")
 
-
-# 🔥 Choix du modèle (exemple : Llama 3)
-llm1 = ChatGroq(groq_api_key=groq_key, model_name="llama3-8b-8192")
-
-# 🔥 Choix du modèle (exemple : deepseek r1)
-llm2 = ChatGroq(groq_api_key=groq_key, model_name="deepseek-r1-distill-qwen-32b")
 
 retriever = vectorstore.as_retriever()
 
