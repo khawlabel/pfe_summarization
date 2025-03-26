@@ -7,7 +7,7 @@ from constants import *
 import pytesseract
 import re
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Users\Dell\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = PATH_tesseract
 
 client_groq = Groq(api_key="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")
 
@@ -22,7 +22,7 @@ def extract_text_from_pdf(pdf_path, lang):
   extracted_text = []
 
   # ✅ Étape 1 : Convertir le PDF en images haute résolution
-  images = convert_from_path(pdf_path, poppler_path='/usr/bin', dpi=400)  # Augmentation de la résolution
+  images = convert_from_path(pdf_path, poppler_path=PATH_poppler, dpi=400)
 
   for i, image in enumerate(images):
       # Convertir PIL en OpenCV
