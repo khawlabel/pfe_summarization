@@ -7,7 +7,7 @@ if not os.path.exists(pdf_path):
 else:
     print("✅ Le fichier existe.")
 try:
-    info = pdfinfo_from_path(pdf_path, poppler_path="C:/poppler/poppler-24.08.0/Library/bin")
+    info = pdfinfo_from_path(pdf_path, poppler_path="C:\Users\DELL\poppler-24.08.0\Library\bin")
     print("✅ PDF lisible, nombre de pages :", info["Pages"])
 except Exception as e:
     print("❌ Erreur Poppler :", e)
