@@ -5,10 +5,11 @@ from pdf2image import convert_from_path
 from groq import Groq
 from constants import *
 import pytesseract
+import re
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Users\Dell\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
 
-client_groq = Groq(api_key=GROQ_API_KEY)
+client_groq = Groq(api_key="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")
 
 def preprocess_image(image):
     """Améliorer la lisibilité pour l'OCR en appliquant un seuillage adaptatif."""
@@ -54,7 +55,6 @@ def extract_text_from_audio_video(pdf_path):
       )
       return transcription.text
 
-import re
 def clean_text_extracted_from_pdf(file_path, lang):
     """Extrait et corrige le texte en fonction de la langue."""
     text = extract_text_from_pdf(file_path, lang)
