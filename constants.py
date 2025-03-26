@@ -11,6 +11,8 @@ QDRANT_URL = os.getenv('QDRANT_URL')
 
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 
+
+
 QDRANT_COLLECTION = os.getenv('QDRANT_COLLECTION')
 
 # Modèles utilisés
