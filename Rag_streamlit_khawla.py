@@ -3,63 +3,93 @@ import streamlit as st
 # Configuration de la page
 st.set_page_config(page_title="🧠 AI Assistant", layout="wide")
 
-# Ajout du CSS pour la mise en page et les couleurs
-st.markdown("""
-    <style>
-        /* Styles globaux */
-        body {
-            font-family: Arial, sans-serif;
+# Initialiser les variables de session
+if "summarized_text" not in st.session_state:
+    st.session_state.summarized_text = None
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Sidebar pour uploader plusieurs fichiers
+st.sidebar.header("📂 Chargez vos fichiers : ")
+uploaded_files = st.sidebar.file_uploader("Choisir des fichiers", type=["pdf", "mp3", "mp4"], accept_multiple_files=True)
+
+# Bouton pour supprimer les fichiers et réinitialiser le résumé
+if uploaded_files:
+    if st.sidebar.button("🗑️ Supprimer tous les fichiers"):
+        st.session_state.summarized_text = None  # Effacer le résumé
+        st.session_state.messages = []  # Effacer l'historique des messages
+        st.rerun()  # Rafraîchir la page pour tout effacer
+
+# Sidebar pour sélectionner la langue de réponse
+st.sidebar.header("🌍 Sélectionnez la langue de réponse :")
+lang = st.sidebar.selectbox("Langue", ["", "Français", "Anglais", "Arabe"])  # Option vide par défaut
+
+# ✅ ✅ ✅ Affichage des fichiers chargés sous forme d'alerte ✅ ✅ ✅
+if uploaded_files and lang:
+    file_names = ", ".join([file.name for file in uploaded_files])  
+    st.success(f"📂 **Fichiers chargés avec succès :** {file_names}")  # Alerte verte
+
+# ✅ Affichage des messages (historique)
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# ✅ Affichage du message du bot pour proposer le résumé
+if uploaded_files and lang and st.session_state.summarized_text is None:
+    st.markdown("---")  # Ligne de séparation
+    with st.chat_message("assistant"):
+        st.markdown("💡 **Vous pouvez générer un résumé en cliquant sur le bouton ci-dessous.**")
+
+    # ✅ Centrer le bouton et ajuster la taille
+    st.markdown(
+        """
+        <style>
+        div.stButton > button {
+            width: 250px;
+            height: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #4C585B;
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: auto;
         }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-        /* Colonnes latérales gauche et droite */
-        .left-sidebar {
-            background-color: #cce5ff; /* Bleu clair */
-            padding: 20px;
-            border-radius: 10px;
-            height: 100vh;  /* Prend toute la hauteur de la page */
-        }
+    # ✅ Centrage du bouton
+    col1, col2, col3 = st.columns([2, 2, 2])
+    with col2:
+        if st.button("📄 Résumer"):
+            summary_text = f"📄 **Résumé des fichiers** :\n\nLorem ipsum dolor sit amet..."
+            st.session_state.summarized_text = summary_text  # Stocker le résumé
+            st.session_state.messages.append({"role": "assistant", "content": summary_text})
+            st.rerun()  # Rafraîchir la page
 
-        .right-sidebar {
-            background-color: #ffccdd; /* Rose clair */
-            padding: 20px;
-            border-radius: 10px;
-            height: 100vh; /* Prend toute la hauteur de la page */
-        }
+# ✅ Affichage du résumé généré sous forme de message du bot
+if st.session_state.summarized_text:
+    with st.chat_message("assistant"):
+        st.markdown(st.session_state.summarized_text)
 
-        /* Contenu principal */
-        .main-content {
-            background-color: #ffffff; /* Blanc normal */
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-    </style>
-""", unsafe_allow_html=True)
+# ✅ Zone de chat en bas de la page
+user_input = st.chat_input("Tapez votre message ici...")
 
-# Création de la disposition en colonnes
-col1, col2, col3 = st.columns([1.5, 2, 1.5])
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
 
-# 🎯 Barre latérale gauche (Bleu clair)
-with col1:
-    st.markdown('<div class="left-sidebar">', unsafe_allow_html=True)
-    st.header("📂 Chargez vos fichiers :")
-    uploaded_file = st.file_uploader("Choisir un fichier", type=["pdf", "mp3", "mp4"])
+    # Simulation de réponse de l'IA (remplace par ton modèle)
+    ia_response = f"🤖 Réponse de l'IA ({lang}) : Je traite votre message..."
+    st.session_state.messages.append({"role": "assistant", "content": ia_response})
 
-    st.header("🌍 Sélectionnez la langue :")
-    lang = st.selectbox("Langue", ["", "Français", "Anglais", "Arabe"])  # Option vide par défaut
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.chat_message("assistant"):
+        st.markdown(ia_response)
 
-# 📌 Contenu principal (Blanc normal)
-with col2:
-    st.markdown('<div class="main-content">', unsafe_allow_html=True)
-    st.title("🧠 AI Assistant")
-    user_input = st.text_input("💬 Posez votre question ici...", key="chat_input")
-    send_btn = st.button("Envoyer")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# 🔹 Barre latérale droite (Rose clair)
-with col3:
-    st.markdown('<div class="right-sidebar">', unsafe_allow_html=True)
-    st.header("🔧 Paramètres")
-    option1 = st.checkbox("Mode avancé")
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.rerun()  # Rafraîchir la page après chaque message
