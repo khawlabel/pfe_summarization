@@ -7,6 +7,8 @@ from constants import *
 import pytesseract
 from langdetect import detect_langs  
 import re
+from langchain_qdrant import Qdrant
+
 pytesseract.pytesseract.tesseract_cmd = r"C:\Users\Dell\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
 
 client_groq = Groq(api_key="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")
@@ -195,7 +197,3 @@ def extract_text(file_path):
 
     else:
         raise ValueError("Format non supporté")
-
-# ✅ Utilisation : # deepseek
-text2 = extract_text("./data/LEJEUNEINDEPENDANT131020241a.pdf")
-print(text2)

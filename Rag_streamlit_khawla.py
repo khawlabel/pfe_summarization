@@ -1,47 +1,150 @@
-import streamlit as st
+import streamlit as st 
+import tempfile
+import os
+from operator import itemgetter
+from qdrant_client import QdrantClient
+from langchain_groq import ChatGroq
+from qdrant_client.models import VectorParams, Distance
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Qdrant
+from langchain_core.output_parsers import StrOutputParser
+from constants import *
+from outils_khawla import extract_text
+from qdrant_client.http.models import Filter
+from prompts import *
+from langchain_qdrant import Qdrant
+# ✅ Gestion du chat utilisateur
+import time  # Ajout de time pour ralentir l'affichage
 
-# Configuration de la page
+
+# 📌 Interface Streamlit
 st.set_page_config(page_title="🧠 AI Assistant", layout="wide")
 
-# Initialiser les variables de session
-if "summarized_text" not in st.session_state:
-    st.session_state.summarized_text = None
+# 🔑 Clés API & Configuration
+QDRANT_API="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.Fau1FEDosaMc3jteRJi2TtaGgq33VxjbFcY6_p3p8w0"
+QDRANT_URL="https://08d055a0-1eb2-45c5-9e9a-64e741bba5ec.europe-west3-0.gcp.cloud.qdrant.io"
+LLM_NAME_1="llama3-8b-8192"
+GROQ_API_KEY="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"
+QDRANT_COLLECTION="my_collection"
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# 🔗 Connexion à Qdrant
+client = QdrantClient(QDRANT_URL, api_key=QDRANT_API)
+embedding_model = HuggingFaceEmbeddings(model_name=MODEL_EMBEDDING)
+vector_size = embedding_model.client.get_sentence_embedding_dimension()
 
-# Sidebar pour uploader plusieurs fichiers
-st.sidebar.header("📂 Chargez vos fichiers : ")
-uploaded_files = st.sidebar.file_uploader("Choisir des fichiers", type=["pdf", "mp3", "mp4"], accept_multiple_files=True)
+if not client.collection_exists(QDRANT_COLLECTION):
+    client.create_collection(
+        collection_name=QDRANT_COLLECTION,
+        vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+    )
 
-# Bouton pour supprimer les fichiers et réinitialiser le résumé
-if uploaded_files:
-    if st.sidebar.button("🗑️ Supprimer tous les fichiers"):
-        st.session_state.summarized_text = None  # Effacer le résumé
-        st.session_state.messages = []  # Effacer l'historique des messages
-        st.rerun()  # Rafraîchir la page pour tout effacer
+vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION, embeddings=embedding_model)
 
-# Sidebar pour sélectionner la langue de réponse
+# 🔥 Chargement du modèle Groq
+llm = ChatGroq(groq_api_key=GROQ_API_KEY, model_name=LLM_NAME_1)
+
+
+
+# 🌍 Sélection de la langue
 st.sidebar.header("🌍 Sélectionnez la langue de réponse :")
-lang = st.sidebar.selectbox("Langue", ["", "Français", "Anglais", "Arabe"])  # Option vide par défaut
+lang = st.sidebar.selectbox("Langue", ["", "Français", "Anglais", "Arabe"])
 
-# ✅ ✅ ✅ Affichage des fichiers chargés sous forme d'alerte ✅ ✅ ✅
+def clear_uploaded_files():
+    """ Supprime uniquement les vecteurs et réinitialise les fichiers uploadés. """
+    filter_all = Filter(must=[])  # Filtre pour tout supprimer
+    client.delete(QDRANT_COLLECTION, filter=filter_all)
+    st.session_state.clear()
+    st.rerun()
+
+# 📂 Chargement des fichiers
+st.sidebar.header("📂 Chargez vos fichiers :")
+uploaded_files = st.sidebar.file_uploader("Choisir des fichiers", type=["pdf", "mp3", "mp4"], accept_multiple_files=True, key="file_uploader")
+
+# Bouton pour supprimer les fichiers et vider la base de données
+if st.sidebar.button("🗑️ Supprimer les fichiers et vider la base"):
+    clear_uploaded_files()
+
+# ✅ Affichage des fichiers chargés
 if uploaded_files and lang:
     file_names = ", ".join([file.name for file in uploaded_files])  
-    st.success(f"📂 **Fichiers chargés avec succès :** {file_names}")  # Alerte verte
+    st.success(f"📂 **Fichiers chargés avec succès :** {file_names}")
 
-# ✅ Affichage des messages (historique)
-for message in st.session_state.messages:
+# 📩 Initialisation des variables d'état
+st.session_state.setdefault("messages", [])
+st.session_state.setdefault("processed_files", set())
+st.session_state.setdefault("summarized_text", None)
+st.session_state.setdefault("summary_generated", False)
+
+# ✅ Traitement et stockage du fichier
+def process_and_store_file(file):
+    """ Enregistre un fichier temporairement, extrait son texte et l'ajoute à Qdrant. """
+    suffix = os.path.splitext(file.name)[1]  
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        temp_file.write(file.read())
+        temp_file_path = temp_file.name
+    
+    try:
+        text = extract_text(temp_file_path)
+        if text:
+            vectorstore.add_texts([text], metadatas=[{"file_name": file.name, "file_type": file.type}])
+            st.session_state["processed_files"].add(file.name)
+    except ValueError as e:
+        st.error(f"⚠️ Erreur d'extraction : {e}")
+    finally:
+        os.remove(temp_file_path)
+
+# 🔍 Récupération du contexte
+def retrieve_context(query):
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
+    return "\n\n".join([doc.page_content for doc in retriever.invoke(query)])
+
+# 📌 Chaînes de traitement
+chain_chat = ( {"context": itemgetter("context"), "question": itemgetter("question"), "language": itemgetter("language")} | prompt_chat | llm | StrOutputParser())
+chain_resumer = ( {"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
+
+# 📩 Affichage des messages précédents
+for message in st.session_state["messages"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ✅ Affichage du message du bot pour proposer le résumé
-if uploaded_files and lang and st.session_state.summarized_text is None:
+# 🌟 Interface chat
+prerequisites_missing = not lang or not uploaded_files
+user_input = st.chat_input(
+    "Pose ta question ici..." if not prerequisites_missing else "❌ Sélectionnez d'abord une langue et chargez au moins un fichier",
+    disabled=prerequisites_missing
+)
+
+
+if user_input:
+    context = retrieve_context(user_input)
+
+    # Ajout du message utilisateur dans l'historique
+    st.session_state["messages"].append({"role": "user", "content": user_input})
+
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
+    with st.chat_message("assistant"):
+        message_placeholder = st.empty()
+        response_stream = ""
+        # Streaming en temps réel des morceaux de réponse
+        for chunk in chain_chat.stream({"context": context, "question": user_input, "language": lang}):
+            if chunk:  # Vérifier que le chunk n'est pas vide
+                print(chunk)
+                response_stream += chunk  # Ajouter le morceau reçu
+                message_placeholder.markdown(response_stream)  # Mise à jour immédiate
+                
+        # Sauvegarde du message complet dans l'historique
+        st.session_state["messages"].append({"role": "assistant", "content": response_stream})
+
+
+# ✅ Vérifier si un résumé a déjà été généré
+if not st.session_state["summary_generated"] and not prerequisites_missing:
     st.markdown("---")  # Ligne de séparation
     with st.chat_message("assistant"):
         st.markdown("💡 **Vous pouvez générer un résumé en cliquant sur le bouton ci-dessous.**")
 
-    # ✅ Centrer le bouton et ajuster la taille
+    # ✅ Centrage du bouton "📖 Résumer"
     st.markdown(
         """
         <style>
@@ -63,33 +166,16 @@ if uploaded_files and lang and st.session_state.summarized_text is None:
         unsafe_allow_html=True
     )
 
-    # ✅ Centrage du bouton
+    # ✅ Afficher le bouton "📖 Résumer"
     col1, col2, col3 = st.columns([2, 2, 2])
     with col2:
-        if st.button("📄 Résumer"):
-            summary_text = f"📄 **Résumé des fichiers** :\n\nLorem ipsum dolor sit amet..."
-            st.session_state.summarized_text = summary_text  # Stocker le résumé
-            st.session_state.messages.append({"role": "assistant", "content": summary_text})
-            st.rerun()  # Rafraîchir la page
+        if st.button("📖 Résumer"):
+            query = "Fais un résumé clair et structuré des informations disponibles."
+            context = retrieve_context(query)
+            st.session_state["summarized_text"] = chain_resumer.invoke({"context": context, "language": lang})
+             # ✅ Ajout du message utilisateur "📖 Résumer"
+            st.session_state["messages"].append({"role": "user", "content": "📖 Résumer"})
+            st.session_state["messages"].append({"role": "assistant", "content": st.session_state["summarized_text"]})
+            st.session_state["summary_generated"] = True
+            st.rerun()  # Rafraîchir la page pour masquer le bouton
 
-# ✅ Affichage du résumé généré sous forme de message du bot
-if st.session_state.summarized_text:
-    with st.chat_message("assistant"):
-        st.markdown(st.session_state.summarized_text)
-
-# ✅ Zone de chat en bas de la page
-user_input = st.chat_input("Tapez votre message ici...")
-
-if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
-    # Simulation de réponse de l'IA (remplace par ton modèle)
-    ia_response = f"🤖 Réponse de l'IA ({lang}) : Je traite votre message..."
-    st.session_state.messages.append({"role": "assistant", "content": ia_response})
-
-    with st.chat_message("assistant"):
-        st.markdown(ia_response)
-
-    st.rerun()  # Rafraîchir la page après chaque message
