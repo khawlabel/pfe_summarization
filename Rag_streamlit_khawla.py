@@ -31,6 +31,10 @@ client = QdrantClient(QDRANT_URL, api_key=QDRANT_API)
 embedding_model = HuggingFaceEmbeddings(model_name=MODEL_EMBEDDING)
 vector_size = embedding_model.client.get_sentence_embedding_dimension()
 
+# 🗑️ Vider la collection dès le lancement de l'application
+if client.collection_exists(QDRANT_COLLECTION):
+    client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
+
 if not client.collection_exists(QDRANT_COLLECTION):
     client.create_collection(
         collection_name=QDRANT_COLLECTION,
