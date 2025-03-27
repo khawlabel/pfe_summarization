@@ -9,9 +9,16 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Qdrant
 from langchain_core.output_parsers import StrOutputParser
 from constants import *
-from outils import extract_text
+from outils_khawla import extract_text
 from qdrant_client.http.models import Filter
 from prompts import *
+
+# 🔑 Clés API & Configuration
+QDRANT_API="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.Fau1FEDosaMc3jteRJi2TtaGgq33VxjbFcY6_p3p8w0"
+QDRANT_URL="https://08d055a0-1eb2-45c5-9e9a-64e741bba5ec.europe-west3-0.gcp.cloud.qdrant.io"
+LLM_NAME_1="llama3-8b-8192"
+GROQ_API_KEY="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"
+QDRANT_COLLECTION="my_collection"
 
 # 🎯 Initialisation Qdrant
 client = QdrantClient(QDRANT_URL, api_key=QDRANT_API)
