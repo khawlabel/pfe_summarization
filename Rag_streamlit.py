@@ -1,5 +1,6 @@
 import streamlit as st
 import tempfile
+from constants import *
 import os
 from outils import extract_text
 from qdrant_client import QdrantClient
@@ -7,8 +8,6 @@ from langchain_groq import ChatGroq
 from qdrant_client.models import VectorParams, Distance
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Qdrant
-from langchain.chains import RetrievalQA
-from constants import *
 from operator import itemgetter
 from langchain_core.output_parsers import StrOutputParser
 from prompts import *
@@ -32,78 +31,113 @@ llm = ChatGroq(groq_api_key=GROQ_API_KEY, model_name=LLM_NAME_1)
 # 📌 Interface Streamlit
 st.set_page_config(page_title="🧠 AI Assistant", layout="wide")
 
-st.sidebar.header("📂 Chargez vos fichiers : ")
-uploaded_file = st.sidebar.file_uploader("Choisir un fichier", type=["pdf", "mp3", "mp4"])
+# 🌍 Sélection de la langue
+st.sidebar.header("🌍 Sélectionnez la langue de réponse :")
+lang = st.sidebar.selectbox("Langue", ["", "Français", "Anglais", "Arabe"])
 
-st.sidebar.header("🌍 Selectionnez la langue de reponse :")
-lang = st.sidebar.selectbox("Langue", ["", "Français", "Anglais", "Arabe"])  # Option vide par défaut
+# 📂 Chargement des fichiers
+st.sidebar.header("📂 Chargez vos fichiers :")
+uploaded_files = st.sidebar.file_uploader(
+    "Choisir des fichiers",
+    type=["pdf", "mp3", "mp4"],
+    accept_multiple_files=True
+)
 
-# 🌟 Boutons pour action
-col1, col2 = st.columns(2)
-with col1:
-    summarize_btn = st.button("📝 Générer un Résumé")
-with col2:
-    ask_btn = st.button("💬 Poser une Question")
-
-
-
-def process_and_store_file(file):
-    """Extrait et stocke le texte du fichier dans Qdrant."""
+# ✅ Traitement et stockage des fichiers
+def process_and_store_files(files):
+    processed_files = []
     
-    # Vérifie si le fichier est un objet BytesIO (cas de Streamlit)
-    if hasattr(file, "read"):
-        suffix = os.path.splitext(file.name)[1]  # Récupère l'extension du fichier
+    for file in files:
+        suffix = os.path.splitext(file.name)[1]
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-            temp_file.write(file.read())  # Sauvegarde temporairement le fichier
-            temp_file_path = temp_file.name  # Récupère le chemin
+            temp_file.write(file.read())
+            temp_file_path = temp_file.name
 
-    else:
-        temp_file_path = file  # Si c'est déjà un chemin, on le garde tel quel
-    try:
-        text = extract_text(temp_file_path)
-        if text:
-            metadata = {"file_name": file.name, "file_type": file.type}
-            vectorstore.add_texts([text], metadatas=[metadata])
-            st.success(f"✅ Texte extrait et stocké depuis {file.name}")
-    except ValueError as e:
-        st.error(f"⚠️ Erreur lors de l'extraction : {e}")
-    finally:
-        os.remove(temp_file_path)  # Supprime le fichier temporaire après traitement
+        try:
+            text = extract_text(temp_file_path)
+            if text:
+                metadata = {"file_name": file.name, "file_type": file.type}
+                vectorstore.add_texts([text], metadatas=[metadata])
+                processed_files.append(file.name)
+        except ValueError as e:
+            st.error(f"⚠️ Erreur lors de l'extraction du fichier {file.name} : {e}")
+        finally:
+            os.remove(temp_file_path)
+    
+    return processed_files
 
+# 🔍 Récupération du contexte
 def retrieve_context_with_metadata(query):
-    """Récupère les documents pertinents"""
     retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
     retrieved_docs = retriever.invoke(query)
     return "\n\n".join([f"📂 {doc.metadata.get('file_name', 'Inconnu')}\n{doc.page_content}" for doc in retrieved_docs])
 
-chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
-chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question"), "language": itemgetter("language")} | prompt_chat | llm | StrOutputParser())
+# 📌 Chaînes de traitement
+chain_chat = (
+    {"context": itemgetter("context"), "question": itemgetter("question"), "language": itemgetter("language")}
+    | prompt_chat | llm | StrOutputParser()
+)
 
-# ⚠️ Condition pour exécuter les actions seulement si la langue est choisie et un bouton est cliqué
-if lang and uploaded_file:
-    if summarize_btn or ask_btn:
-        process_and_store_file(uploaded_file)
-        
-        if summarize_btn:
-            query = "Fais un résumé structuré des informations disponibles."
+chain_resumer = (
+    {"context": itemgetter("context"), "language": itemgetter("language")}
+    | prompt_resumer | llm | StrOutputParser()
+)
+
+# 📩 Initialisation de l'historique des messages
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# 📩 Affichage des messages précédents
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# 🌟 Interface chat + résumé bien organisé
+chat_container = st.container()
+
+with chat_container:
+    col1, col2 = st.columns([1, 3])  # Ajustement de la mise en page
+
+    with col1:
+        summarize_btn = st.button("📄 Résumer", use_container_width=True)
+
+    with col2:
+        user_input = st.chat_input("Pose ta question ici...")
+
+# 💡 Gestion des actions après soumission
+if summarize_btn:
+    if not uploaded_files:
+        st.warning("⚠️ Veuillez téléverser des fichiers avant de générer un résumé.")
+    elif not lang:
+        st.warning("⚠️ Veuillez sélectionner une langue pour le résumé.")
+    else:
+        processed_files = process_and_store_files(uploaded_files)
+        if processed_files:
+            query = "Fais un résumé clair et structuré des informations disponibles dans les sources."
             context = retrieve_context_with_metadata(query)
-            result = chain_resumer.invoke({"context": context, "language": lang})
-            st.subheader("📝 Résumé généré")
-            st.write(result)
-        
-        if ask_btn:
-            query = st.text_input("❓ Pose ta question ici")
-            if query:
-                st.write("🔍 Question posée :", query)  # Debug
+            summary = chain_resumer.invoke({"context": context, "language": lang})
 
-                context = retrieve_context_with_metadata(query)
-                st.write("📂 Contexte récupéré :", context)  # Debug
+            st.session_state.messages.append({"role": "assistant", "content": f"**Résumé du document :**\n\n{summary}"})
 
-                result = chain_chat.invoke({"context": context, "question": query, "language": lang})
-                st.write("🤖 Réponse générée :", result)  # Debug
+            with st.chat_message("assistant"):
+                st.markdown(f"**Résumé du document :**\n\n{summary}")
 
-                st.subheader("🤖 Réponse du LLM")
-                st.write(result)
+if user_input:
+    if not uploaded_files:
+        st.warning("⚠️ Veuillez téléverser des fichiers avant de poser une question.")
+    elif not lang:
+        st.warning("⚠️ Veuillez sélectionner une langue pour poser votre question.")
+    else:
+        processed_files = process_and_store_files(uploaded_files)
+        if processed_files:
+            context = retrieve_context_with_metadata(user_input)
+            response = chain_chat.invoke({"context": context, "question": user_input, "language": lang})
 
-else:
-    st.warning("⚠️ Veuillez téléverser un fichier et choisir une langue avant de poursuivre.")
+            st.session_state.messages.append({"role": "user", "content": user_input})
+            st.session_state.messages.append({"role": "assistant", "content": response})
+
+            with st.chat_message("user"):
+                st.markdown(user_input)
+
+            with st.chat_message("assistant"):
+                st.markdown(response)
