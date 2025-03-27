@@ -1,4 +1,4 @@
-import streamlit as st 
+import streamlit as st
 import tempfile
 import os
 from operator import itemgetter
@@ -10,12 +10,10 @@ from langchain_community.vectorstores import Qdrant
 from langchain_core.output_parsers import StrOutputParser
 from constants import *
 from outils_khawla import extract_text
-from qdrant_client.http.models import Filter
+from qdrant_client.http.models import Filter, FilterSelector
 from prompts import *
 from langchain_qdrant import Qdrant
-# ✅ Gestion du chat utilisateur
 import time  # Ajout de time pour ralentir l'affichage
-
 
 # 📌 Interface Streamlit
 st.set_page_config(page_title="🧠 AI Assistant", layout="wide")
@@ -43,17 +41,16 @@ vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION, embedding
 # 🔥 Chargement du modèle Groq
 llm = ChatGroq(groq_api_key=GROQ_API_KEY, model_name=LLM_NAME_1)
 
-
-
 # 🌍 Sélection de la langue
 st.sidebar.header("🌍 Sélectionnez la langue de réponse :")
 lang = st.sidebar.selectbox("Langue", ["", "Français", "Anglais", "Arabe"])
 
 def clear_uploaded_files():
     """ Supprime uniquement les vecteurs et réinitialise les fichiers uploadés. """
-    filter_all = Filter(must=[])  # Filtre pour tout supprimer
-    client.delete(QDRANT_COLLECTION, filter=filter_all)
-    st.session_state.clear()
+    client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
+    st.session_state.pop("file_uploader", None)  # Réinitialise le file_uploader
+    st.session_state["processed_files"] = set()  # Réinitialise la liste des fichiers traités
+    st.session_state["uploaded_files"] = []  # Réinitialise la liste des fichiers uploadés
     st.rerun()
 
 # 📂 Chargement des fichiers
@@ -63,6 +60,7 @@ uploaded_files = st.sidebar.file_uploader("Choisir des fichiers", type=["pdf", "
 # Bouton pour supprimer les fichiers et vider la base de données
 if st.sidebar.button("🗑️ Supprimer les fichiers et vider la base"):
     clear_uploaded_files()
+
 
 # ✅ Affichage des fichiers chargés
 if uploaded_files and lang:
@@ -114,7 +112,6 @@ user_input = st.chat_input(
     disabled=prerequisites_missing
 )
 
-
 if user_input:
     context = retrieve_context(user_input)
 
@@ -136,7 +133,6 @@ if user_input:
                 
         # Sauvegarde du message complet dans l'historique
         st.session_state["messages"].append({"role": "assistant", "content": response_stream})
-
 
 # ✅ Vérifier si un résumé a déjà été généré
 if not st.session_state["summary_generated"] and not prerequisites_missing:
@@ -178,4 +174,3 @@ if not st.session_state["summary_generated"] and not prerequisites_missing:
             st.session_state["messages"].append({"role": "assistant", "content": st.session_state["summarized_text"]})
             st.session_state["summary_generated"] = True
             st.rerun()  # Rafraîchir la page pour masquer le bouton
-
