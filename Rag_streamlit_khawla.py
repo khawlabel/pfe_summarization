@@ -14,6 +14,7 @@ from qdrant_client.http.models import Filter, FilterSelector
 from prompts import *
 from langchain_qdrant import Qdrant
 import time  # Ajout de time pour ralentir l'affichage
+import atexit
 
 # 📌 Interface Streamlit
 st.set_page_config(page_title="🧠 AI Assistant", layout="wide")
@@ -60,7 +61,8 @@ uploaded_files = st.sidebar.file_uploader("Choisir des fichiers", type=["pdf", "
 # Bouton pour supprimer les fichiers et vider la base de données
 if st.sidebar.button("🗑️ Supprimer les fichiers et vider la base"):
     clear_uploaded_files()
-
+# Enregistrer la fonction pour qu'elle soit appelée à la fermeture de l'application
+atexit.register(clear_uploaded_files)
 
 # ✅ Affichage des fichiers chargés
 if uploaded_files and lang:
@@ -74,6 +76,7 @@ st.session_state.setdefault("summarized_text", None)
 st.session_state.setdefault("summary_generated", False)
 
 # ✅ Traitement et stockage du fichier
+
 def process_and_store_file(file):
     """ Enregistre un fichier temporairement, extrait son texte et l'ajoute à Qdrant. """
     suffix = os.path.splitext(file.name)[1]  
@@ -104,6 +107,11 @@ chain_resumer = ( {"context": itemgetter("context"), "language": itemgetter("lan
 for message in st.session_state["messages"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+        
+if uploaded_files and lang:
+    for file in uploaded_files:
+        if file.name not in st.session_state["processed_files"]:
+            process_and_store_file(file)
 
 # 🌟 Interface chat
 prerequisites_missing = not lang or not uploaded_files
