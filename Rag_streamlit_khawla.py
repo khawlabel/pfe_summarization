@@ -19,13 +19,9 @@ import atexit
 # 📌 Interface Streamlit
 st.set_page_config(page_title="🧠 AI Assistant", layout="wide")
 
-# 🔑 Clés API & Configuration
-QDRANT_API="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.Fau1FEDosaMc3jteRJi2TtaGgq33VxjbFcY6_p3p8w0"
-QDRANT_URL="https://08d055a0-1eb2-45c5-9e9a-64e741bba5ec.europe-west3-0.gcp.cloud.qdrant.io"
-LLM_NAME_1="llama3-8b-8192"
-GROQ_API_KEY="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"
-QDRANT_COLLECTION="my_collection"
-
+print("QDRANT_URL",QDRANT_URL)
+print("QDRANT_API",QDRANT_API)
+print("GROQ_API_KEY",GROQ_API_KEY)
 # 🔗 Connexion à Qdrant avec mise en cache
 @st.cache_resource
 def get_qdrant_client():
@@ -48,7 +44,6 @@ if not client.collection_exists(QDRANT_COLLECTION):
 
 vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION, embeddings=embedding_model)
 
-# 🔥 Chargement du modèle Groq avec mise en cache
 @st.cache_resource
 def get_llm():
     return ChatGroq(groq_api_key=GROQ_API_KEY, model_name=LLM_NAME_1)
