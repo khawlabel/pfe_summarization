@@ -11,8 +11,11 @@ from langchain_qdrant import Qdrant
 from constants import *
 import platform
 
+if platform.system() == "Windows":
+    pytesseract.pytesseract.tesseract_cmd = PATH_tesseract
+else:
+    pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"  # Chemin sous Linux (Streamlit Cloud)
 
-pytesseract.pytesseract.tesseract_cmd = PATH_tesseract
 
 client_groq = Groq(api_key=GROQ_API_KEY)
 
