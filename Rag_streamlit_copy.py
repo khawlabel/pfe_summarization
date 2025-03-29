@@ -83,7 +83,6 @@ st.session_state.setdefault("summary_generated", False)
 
 
 def process_and_store_file(file):
-    client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
     suffix = os.path.splitext(file.name)[1]  
     file_type = suffix.lstrip(".")  # Supprime le point pour obtenir 'pdf', 'mp4', etc.
 
@@ -129,6 +128,7 @@ for message in st.session_state["messages"]:
         st.markdown(message["content"])
 
 if uploaded_files and lang:
+    client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
     for file in uploaded_files:
         if file.name not in st.session_state["processed_files"]:
             process_and_store_file(file)
