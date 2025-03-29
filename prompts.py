@@ -41,8 +41,8 @@ template_resumer = """
                     - **Interdiction** : Pas de reformulation excessive ni d'ajout d'interprétation.  
 
                     ### **Contraintes sur le résumé** :  
-                    - **Longueur** : **Entre 9 et 146 mots** (≈ 70 mots en moyenne).  
-                    - **Caractères** : **Entre 59 et 927 caractères** (≈ 500 caractères en moyenne).  
+                    - **Longueur** : **Entre 9 et 146 mots** (≈ 80 mots en moyenne).  
+                    - **Caractères** : **Entre 59 et 927 caractères** (≈ 550 caractères en moyenne).  
                     - **Nombre de phrases** : **1 à 3 phrases** en général (**max 8**).  
                     - **Concision** : Clair, précis, sans analyse ni commentaire subjectif.  
                     - **Obligation** : Conserver **tous les faits les dates et chiffres essentiels**.  
