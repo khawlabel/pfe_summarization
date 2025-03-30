@@ -1,0 +1,237 @@
+import streamlit as st
+import tempfile
+import os
+from operator import itemgetter
+from qdrant_client import QdrantClient
+from langchain_groq import ChatGroq
+from qdrant_client.models import VectorParams, Distance
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Qdrant
+from langchain_core.output_parsers import StrOutputParser
+from constants import *
+from outils import extract_text
+from qdrant_client.http.models import Filter, FilterSelector
+from prompts_update import *
+
+# 📌 Interface Streamlit
+st.set_page_config(page_title="🧠 AI Assistant", layout="wide")
+
+# 🔗 Connexion à Qdrant avec mise en cache
+@st.cache_resource
+def get_qdrant_client():
+    return QdrantClient(QDRANT_URL, api_key=QDRANT_API)
+
+client = get_qdrant_client()
+
+@st.cache_resource
+def get_embedding_model():
+    return HuggingFaceEmbeddings(model_name=MODEL_EMBEDDING)
+
+embedding_model = get_embedding_model()
+vector_size = embedding_model.client.get_sentence_embedding_dimension()
+
+if not client.collection_exists(QDRANT_COLLECTION):
+    client.create_collection(
+        collection_name=QDRANT_COLLECTION,
+        vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+    )
+
+vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION, embeddings=embedding_model)
+
+# 🔥 Chargement du modèle Groq avec mise en cache
+@st.cache_resource
+def get_llm():
+    return ChatGroq(groq_api_key=GROQ_API_KEY, model_name=LLM_NAME_1)
+
+llm = get_llm()
+
+def clear_uploaded_files():
+    """Réinitialisation des fichiers et de la session"""
+    client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
+    st.session_state.clear()
+    st.session_state["file_uploader"] = None
+    st.markdown("<meta http-equiv='refresh' content='0'>", unsafe_allow_html=True) 
+# 📂 Barre latérale pour uploader les fichiers
+st.sidebar.header("📂 Upload your files:")
+if "file_uploader_key" not in st.session_state:
+    st.session_state["file_uploader_key"] = 0
+if "submit_clicked" not in st.session_state:
+    st.session_state["submit_clicked"] = False  # ⚡ État du bouton Submit
+
+uploaded_files = st.sidebar.file_uploader(
+    "Choose your files ",
+    type=["pdf",".mp3", ".wav", ".ogg", ".flac", ".m4a",".mp4", ".avi", ".mov", ".mkv"],
+    accept_multiple_files=True,
+    key=f"file_uploader_{st.session_state['file_uploader_key']}",
+)
+
+# 🔘 Boutons de contrôle
+col1, col2 = st.sidebar.columns(2)
+with col1:
+    if st.button("🗑️ Reset all"):
+        clear_uploaded_files()
+        st.session_state["submit_clicked"] = False  # Reset Submit
+
+with col2:
+    if st.button("✅ Submit"):
+        st.session_state["submit_clicked"] = True  # Activer le stockage
+
+# 📌 Initialisation des sessions
+st.session_state.setdefault("messages", [])
+st.session_state.setdefault("processed_files", set())
+st.session_state.setdefault("summary_generated", False)
+if "summary_ready" not in st.session_state:
+    st.session_state["summary_ready"] = False
+
+
+def process_and_store_file(file):
+    """Extrait le texte du fichier et stocke les embeddings"""
+    suffix = os.path.splitext(file.name)[1]
+    file_type = suffix.lstrip(".")
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        temp_file.write(file.read())
+        temp_file_path = temp_file.name
+
+    try:
+        text = extract_text(temp_file_path)
+        if text:
+            vectorstore.add_texts([text], metadatas=[{"file_name": file.name, "file_type": file_type}])
+            st.session_state["processed_files"].add(file.name)
+    except ValueError as e:
+        st.error(f"⚠️ Extraction error: {e}")
+    finally:
+        os.remove(temp_file_path)
+
+def retrieve_context_with_metadata(query):
+    """Récupère le contexte pertinent pour la requête"""
+    number_of_sources = len(st.session_state["processed_files"])
+    retriever = vectorstore.as_retriever(search_kwargs={"k": number_of_sources})
+    retrieved_docs = retriever.invoke(query)
+
+    formatted_context = "\n\n".join(
+        [
+            f"📂 **Fichier**: {doc.metadata.get('file_name', 'Inconnu')}\n"
+            f"📄 **Type**: {doc.metadata.get('file_type', 'Inconnu')}\n"
+            f"🔹 **Contenu**:\n{doc.page_content}"
+            for doc in retrieved_docs
+        ]
+    )
+
+    return formatted_context
+
+# 📌 Chaînes de traitement
+chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm | StrOutputParser())
+chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
+
+# 🛑 Suppression des données uniquement si tous les fichiers ont été supprimés manuellement
+if not uploaded_files and st.session_state["processed_files"]:
+    client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
+    st.session_state["processed_files"].clear()  # Réinitialisation des fichiers traités
+    st.session_state["summary_generated"] = False  # Autoriser une nouvelle génération de résumé
+    st.session_state.pop("summary_text", None)  # Supprime l'ancien résumé s'il existe
+    st.session_state["messages"] = []  # Réinitialise les messages du chat
+
+# 🛑 Suppression des données une seule fois
+if uploaded_files and not st.session_state["summary_generated"]:
+    client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
+    st.session_state["summary_generated"] = True
+
+# 📌 Traitement des fichiers uploadés
+if uploaded_files and st.session_state["submit_clicked"]:
+    for file in uploaded_files:
+        if file.name not in st.session_state["processed_files"]:
+            process_and_store_file(file)
+
+    # 📖 Génération du résumé seulement si de nouveaux fichiers sont présents
+    if uploaded_files:
+        # Initialisation des sessions si elles n'existent pas
+        if "summary_text" not in st.session_state:
+            st.session_state["summary_text"] = {"fr": "", "ar": ""}
+        query = "Fais un résumé clair et structuré des informations disponibles."
+        context = retrieve_context_with_metadata(query)
+        st.markdown('<h2 style="font-size: 22px;">📖 Résumé des documents</h2>', unsafe_allow_html=True)
+        st.divider()  # Ligne de séparation visuelle
+
+        # 📌 **Résumé en Français**
+        with st.expander("📌 **Résumé en Français**", expanded=True):
+            summary_fr_placeholder = st.empty()
+            if not st.session_state["summary_text"]["fr"]:  # Si le résumé n'existe pas encore
+                for chunk in chain_resumer.stream({"context": context, "language": "francais"}):
+                    if chunk:
+                        st.session_state["summary_text"]["fr"] += chunk
+                        summary_fr_placeholder.markdown(st.session_state["summary_text"]["fr"])
+            else:
+                summary_fr_placeholder.markdown(st.session_state["summary_text"]["fr"])
+
+
+        # 📌 **Résumé en Arabe**
+        with st.expander("📌 **ملخص باللغة العربية**", expanded=True):
+            summary_ar_placeholder = st.empty()
+            if not st.session_state["summary_text"]["ar"]:  # Si le résumé n'existe pas encore
+                for chunk in chain_resumer.stream({"context": context, "language": "arabe"}):
+                    if chunk:
+                        st.session_state["summary_text"]["ar"] += chunk
+                        summary_ar_placeholder.markdown(st.session_state["summary_text"]["ar"])
+            else:
+                summary_ar_placeholder.markdown(st.session_state["summary_text"]["ar"])
+
+
+        # Réinitialiser le bouton Submit après la génération du résumé
+        st.session_state["submit_clicked"] = False
+
+        st.session_state["summary_ready"] = True  # Indiquer que le résumé est prêt
+
+
+    # 💬 **Message après le résumé**
+    st.markdown('<h3 style="font-size: 20px;">💬 <b>Vous pouvez maintenant poser vos questions dans le chat ci-dessous</b></h3>', unsafe_allow_html=True)
+elif "summary_text" in st.session_state :  # S'affiche uniquement si un résumé existe et qu'aucun fichier n'est uploadé
+    st.markdown('<h2 style="font-size: 22px;">📖 Résumé des documents</h2>', unsafe_allow_html=True)
+    st.divider()  # Ligne de séparation visuelle
+
+    with st.expander("📌 **Résumé en Français**", expanded=True):
+        st.markdown(st.session_state["summary_text"]["fr"])
+
+    with st.expander("📌 **ملخص باللغة العربية**", expanded=True):
+        st.markdown(st.session_state["summary_text"]["ar"])
+
+    st.markdown('<h3 style="font-size: 20px;">💬 <b>Vous pouvez maintenant poser vos questions dans le chat ci-dessous</b></h3>', unsafe_allow_html=True)
+
+
+# 🔄 Affichage des messages existants
+for message in st.session_state["messages"]:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# ✅ **Activation du chat après le résumé**
+
+user_input = st.chat_input(
+    "Ask your questions here..." if st.session_state["summary_ready"] else "❌ Please upload and submit a file first.", 
+    disabled=not st.session_state["summary_ready"]
+)
+st.markdown("""
+    <style>
+        .stChatInput textarea {
+            font-size: 18px !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+          
+        }
+    </style>
+""", unsafe_allow_html=True)
+if user_input:
+    context = retrieve_context_with_metadata(user_input)
+    st.session_state["messages"].append({"role": "user", "content": user_input})
+    
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
+    with st.chat_message("assistant"):
+        message_placeholder = st.empty()
+        response_stream = ""
+        for chunk in chain_chat.stream({"context": context, "question": user_input}):
+            if chunk:
+                response_stream += chunk
+                message_placeholder.markdown(response_stream)
+
+        st.session_state["messages"].append({"role": "assistant", "content": response_stream})
