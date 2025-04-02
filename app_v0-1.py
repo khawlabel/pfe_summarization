@@ -9,9 +9,12 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Qdrant
 from langchain_core.output_parsers import StrOutputParser
 from constants import *
-from outils import extract_text
+from outils_khawla import extract_text
 from qdrant_client.http.models import Filter, FilterSelector
-from prompts_update import *
+from prompts_v0_1 import *
+
+
+## App-V0-1  ##
 
 # 📌 Interface Streamlit
 st.set_page_config(page_title="🧠 AI Assistant", layout="wide")
