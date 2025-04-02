@@ -63,7 +63,7 @@ template_resumer = """
                     Résumé (strictement en {language}) :  
             """  
 
-template_chat = template_chat = template_chat = """
+template_chat = """
 Tu es un assistant intelligent spécialisé dans les questions-réponses, conçu pour fournir des réponses précises, naturelles et complètes en utilisant exclusivement les informations fournies.
 
 ### Instructions :
