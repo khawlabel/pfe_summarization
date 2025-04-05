@@ -7,8 +7,6 @@ from constants import *
 import pytesseract
 from langdetect import detect_langs  
 import re
-from langchain_qdrant import Qdrant
-from constants import *
 import platform
 
 if platform.system() == "Windows":
@@ -130,19 +128,20 @@ def clean_text_extracted_from_pdf(file_path, lang):
              messages=[
                 {
                   "role": "system",
-                  "content": """Tu es un assistant spécialisé dans la correction et l'amélioration des textes extraits via OCR en français et en arabe.
+                  "content": """Tu es un assistant spécialisé dans la correction et l'amélioration des textes extraits via OCR en français.
 
-                  - **Ne reformule pas le texte.** Garde toutes les phrases et paragraphes dans le même ordre.
-                  - **Corrige uniquement** les fautes d'orthographe, de grammaire et de typographie.
-                  - **Supprime** les éléments non pertinents, tels que :
+                  - *Ne reformule pas le texte.* Garde toutes les phrases et paragraphes dans le même ordre.
+                  - *Corrige uniquement* les fautes d'orthographe, de grammaire et de typographie.
+                  - *Corrige précisément les erreurs de lettres* sans modifier complètement un mot. Par exemple, si le texte contient "ft th", corrige-le en "ftth" sans changer la structure du mot.
+                  - *Supprime* les éléments non pertinents, tels que :
                     - Les dates de publication (ex : "Publié le :", "Le :").
                     - Les liens et URL (ex : "https://", "www.", ".dz").
                     - Les noms de journaux et identifiants techniques(ex : "OUEST TRIBUNE","ALGERIE CONFLUENCES").
                     - Les en-têtes et Les mots isolés et signatures (ex : "Par Rédaction", "©24H Algérie","MEDIAMARKETING").
                     - Les numéros de page et balises inutiles (ex : "1/1").
-                  - **Ne modifie pas le style d'écriture ni le ton du texte.**
-                  - **La sortie doit être strictement fidèle au texte original, sans reformulation ni résumé.**
-                  - **Présente directement le texte corrigé, sans introduction ni indication comme "Voici le texte corrigé".**"""
+                  - *Ne modifie pas le style d'écriture ni le ton du texte.*
+                  - *La sortie doit être strictement fidèle au texte original, sans reformulation ni résumé.*
+                  - *Présente directement le texte corrigé, sans introduction ni indication comme "Voici le texte corrigé".*"""
                 },
                 {
                     "role": "user",
@@ -162,16 +161,17 @@ def clean_text_extracted_from_pdf(file_path, lang):
               messages=[
                 {
                 "role": "system",
-                "content": """أنت مساعد متخصص في تصحيح النصوص العربية المستخرجة من التعرف الضوئي على الحروف (OCR).
-                - **لا تعيد صياغة النص.** احتفظ بجميع الجمل بنفس ترتيبها وصيغتها الأصلية.
-                - **قم فقط بتصحيح الأخطاء الإملائية والنحوية والتنسيقية.**
-                - **احذف العناصر غير الضرورية** مثل:
-                  - التواريخ، الروابط، أسماء الصحف.
-                  - أرقام الصفحات، الرموز غير المفهومة، والأجزاء غير المقروءة.
-                - **قدم النص مباشرة دون أي مقدمة أو عبارات مثل "إليك النص المصحح".**
-                - **لا تستخدم أي علامات خاصة مثل " ** " أو تقسيم النص بفواصل ظاهرة.**
-                - **يجب أن يكون النص النهائي واضحاً، منسقاً، وخالياً من الأخطاء، مع الحفاظ على دقة وأمانة المعلومات.**"""
-              },
+                "content": """أنت مساعد متخصص في تصحيح النصوص العربية المستخرجة من التعرف الضوئي على الحروف (OCR).  
+                - *لا تعيد صياغة النص.* احتفظ بجميع الجمل بنفس ترتيبها وصيغتها الأصلية.  
+                - *قم فقط بتصحيح الأخطاء الإملائية والنحوية والتنسيقية، خاصة تلك التي لا تحمل معنى واضحاً.*  
+                - *احذف العناصر غير الضرورية* مثل:  
+                  - التواريخ، الروابط، أسماء الصحف.  
+                  - أرقام الصفحات، الرموز غير المفهومة، والأجزاء غير المقروءة.  
+                - *احذف أي نص غير عربي يظهر في بداية أو نهاية المحتوى إذا لم يكن جزءًا من السياق الأصلي.*  
+                - *قدم النص مباشرة دون أي مقدمة أو عبارات مثل "إليك النص المصحح".*  
+                - *لا تستخدم أي علامات خاصة مثل " ** " أو تقسيم النص بفواصل ظاهرة.*  
+                - *يجب أن يكون النص النهائي واضحاً، منسقاً، وخالياً من الأخطاء، مع الحفاظ على دقة وأمانة المعلومات.*  
+"""},
                       {
                     "role": "user",
                     "content": text

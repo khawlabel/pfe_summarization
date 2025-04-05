@@ -43,11 +43,11 @@ vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION, embedding
 
 # 🔥 Chargement du modèle Groq avec mise en cache
 @st.cache_resource
-def get_llm():
-    return ChatGroq(groq_api_key=GROQ_API_KEY, model_name=LLM_NAME_1)
+def get_llm(llm_name):
+    return ChatGroq(groq_api_key=GROQ_API_KEY, model_name=llm_name)
 
-llm = get_llm()
-
+llm = get_llm(LLM_NAME_1)
+llm2=get_llm(LLM_NAME_4)
 def clear_uploaded_files():
     """Réinitialisation des fichiers et de la session"""
     client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
@@ -126,6 +126,7 @@ def retrieve_context_with_metadata(query):
 # 📌 Chaînes de traitement
 chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm | StrOutputParser())
 chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
+chain_ameliore_ar  = ({"texte_brut": itemgetter("texte_brut")} | prompt_ameliore_ar | llm2| StrOutputParser())
 
 # 🛑 Suppression des données uniquement si tous les fichiers ont été supprimés manuellement
 if not uploaded_files and st.session_state["processed_files"]:
@@ -168,16 +169,27 @@ if uploaded_files and st.session_state["submit_clicked"]:
                 summary_fr_placeholder.markdown(st.session_state["summary_text"]["fr"])
 
 
-        # 📌 **Résumé en Arabe**
+                # 📌 **Résumé en Arabe**
         with st.expander("📌 **ملخص باللغة العربية**", expanded=True):
             summary_ar_placeholder = st.empty()
-            if not st.session_state["summary_text"]["ar"]:  # Si le résumé n'existe pas encore
+
+            if not st.session_state["summary_text"]["ar"]:
+                # 1. Générer le résumé brut en une seule fois (pas de streaming ici)
+                raw_ar_summary = ""
                 for chunk in chain_resumer.stream({"context": context, "language": "arabe"}):
+                    if chunk:
+                        raw_ar_summary += chunk
+                
+                # 2. Améliorer le résumé en streaming et afficher uniquement le texte corrigé
+                st.session_state["summary_text"]["ar"] = ""
+                for chunk in chain_ameliore_ar.stream({"texte_brut": raw_ar_summary}):
                     if chunk:
                         st.session_state["summary_text"]["ar"] += chunk
                         summary_ar_placeholder.markdown(st.session_state["summary_text"]["ar"])
+
             else:
                 summary_ar_placeholder.markdown(st.session_state["summary_text"]["ar"])
+
 
 
         # Réinitialiser le bouton Submit après la génération du résumé

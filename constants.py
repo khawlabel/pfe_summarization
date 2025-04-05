@@ -18,6 +18,8 @@ QDRANT_COLLECTION = os.getenv('QDRANT_COLLECTION')
 LLM_NAME_1="llama3-8b-8192"
 LLM_NAME_2="deepseek-r1-distill-qwen-32b"
 LLM_correction="deepseek-r1-distill-llama-70b"
+LLM_NAME_3="deepseek-ai/deepseek-llm-7b-cha"
+LLM_NAME_4="llama-3.3-70b-versatile"
 WHISPER="whisper-large-v3"
 MODEL_EMBEDDING="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
