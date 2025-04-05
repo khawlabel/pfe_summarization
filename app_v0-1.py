@@ -185,10 +185,13 @@ if uploaded_files and st.session_state["submit_clicked"]:
                 for chunk in chain_ameliore_ar.stream({"texte_brut": raw_ar_summary}):
                     if chunk:
                         st.session_state["summary_text"]["ar"] += chunk
-                        summary_ar_placeholder.markdown(st.session_state["summary_text"]["ar"])
+                        summary_ar_placeholder.markdown(f'<div style="font-size: 21px; text-align: right; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
+
+
 
             else:
-                summary_ar_placeholder.markdown(st.session_state["summary_text"]["ar"])
+                summary_ar_placeholder.markdown(f'<div style="font-size: 21px; text-align: right; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
+
 
 
 
@@ -208,7 +211,7 @@ elif "summary_text" in st.session_state :  # S'affiche uniquement si un résumé
         st.markdown(st.session_state["summary_text"]["fr"])
 
     with st.expander("📌 **ملخص باللغة العربية**", expanded=True):
-        st.markdown(st.session_state["summary_text"]["ar"])
+        st.markdown(f'<div style="font-size: 21px; text-align: right; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
 
     st.markdown('<h3 style="font-size: 20px;">💬 <b>Vous pouvez maintenant poser vos questions dans le chat ci-dessous</b></h3>', unsafe_allow_html=True)
 
