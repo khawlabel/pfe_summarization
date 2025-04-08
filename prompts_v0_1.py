@@ -62,7 +62,11 @@ template_resumer = """
 
                     Résumé (strictement en {language}) :  
             """  
-
+template_simple="""
+Résume le texte suivant en {language}, 
+en tenant compte du contexte suivant :   {context} 
+ Le résumé doit être clair, concis et adapté au contexte.
+"""
 template_chat = """
 Tu es un assistant intelligent spécialisé dans les questions-réponses, conçu pour fournir des réponses précises, naturelles et complètes en utilisant exclusivement les informations fournies.
 
@@ -125,5 +129,6 @@ template_ameliore_ar = """
 
 
 prompt_resumer = ChatPromptTemplate.from_template(template_resumer)
+prompt_simple = ChatPromptTemplate.from_template(template_simple)
 prompt_chat = ChatPromptTemplate.from_template(template_chat)
 prompt_ameliore_ar= ChatPromptTemplate.from_template(template_ameliore_ar)
