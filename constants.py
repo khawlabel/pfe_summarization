@@ -22,6 +22,7 @@ LLM_NAME_3="deepseek-ai/deepseek-llm-7b-cha"
 LLM_NAME_4="llama-3.3-70b-versatile"
 WHISPER="whisper-large-v3"
 MODEL_EMBEDDING="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-
+  
+  
 PATH_tesseract = r"C:\Users\Dell\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
 PATH_poppler = "C:/Program Files/poppler-24.08.0/Library/bin"
