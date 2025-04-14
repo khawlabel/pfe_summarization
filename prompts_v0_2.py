@@ -1,77 +1,66 @@
 
 from langchain_core.prompts import ChatPromptTemplate
 
-template_resumer = """  
-                Ta tâche est de générer un **résumé** en respectant strictement les règles suivantes :  
-
-                ### **Règles générales** :  
-                - **Ne jamais ajouter d'informations extérieures au contexte fourni.**  
-                - **Ne pas analyser ni interpréter les faits.** Fournis uniquement les informations essentielles.  
-                - **Le résumé doit être direct et informatif, sans liste à puces.**  
-                - **Respecte le style journalistique** : phrases structurées, neutres et précises.  
-                - **Ne pas ajouter d’introduction ou de conclusion.**  
-                - **Mentionner les chiffres et faits marquants sans reformulation inutile.**  
-
-                ### **Règles spécifiques à respecter impérativement :**  
-
-                1. **Reprendre les termes du contexte exactement comme ils apparaissent.**  
-                - **Interdiction stricte de modifier ou reformuler les noms officiels.**  
-                - **Exemple interdit :** "La ministre des Télécommunications" si le texte mentionne "le ministère".  
-
-                2. **Ne pas introduire de causes ou justifications non mentionnées.**  
-                - **Exemple interdit :** Dire que l’augmentation est due à un "programme de développement" si cela n'est pas explicitement écrit.  
-                - **Exemple interdit :** Ajouter "directives du Président" si cela n’apparaît pas dans le texte source.  
-
-                3. **Ne jamais ajouter d’explications techniques non présentes.**  
-                - **Exemple interdit :** "L'innovation a amélioré la vitesse de téléchargement" si cela n'est pas dit.  
-
-                4. **Respect strict des chiffres et des formulations du contexte.**  
-                - **Ne pas changer "foyers connectés" en "accès internet"** si ce n'est pas la même unité.  
-                - **Reprendre exactement les chiffres tels qu’ils apparaissent.**  
+template_resumer = """
+                Ta tâche est de produire un **résumé clair, structuré et informatif**, à partir du **contexte fourni** ci-dessous. Tu dois **respecter scrupuleusement toutes les consignes**, notamment la **longueur maximale**, sans ajout ni omission.
 
                 ---
 
-                ### **Contraintes sur le résumé** :  
-                - **Longueur** : **Entre 9 et 146 mots** (≈ 80 mots en moyenne).  
-                - **Caractères** : **Entre 59 et 927 caractères** (≈ 550 caractères en moyenne).  
-                - **Nombre de phrases** : **1 à 3 phrases** en général (**max 8**).  
-                - **Concision** : Clair, précis, sans analyse ni commentaire subjectif.  
-                - **Obligation** : Conserver **tous les faits les dates et chiffres essentiels**.  
+                ### 🎯 Objectif :
+                Résumer fidèlement le contenu, **sans interprétation, reformulation excessive ni analyse personnelle**, en conservant **tous les faits, chiffres, noms et dates essentiels**.
 
                 ---
 
-                ### **Structure logique obligatoire du résumé** :  
-                Identifie d'abord ces informations si elles sont présentes :
-                1. **Qui a fourni ou annoncé l’information** (ex. : un ministère, une entreprise, un responsable, un porte-parole, etc.)   
-                2. **Quoi** s’est passé (événement principal)  
-                3. **Où** cela s’est produit (si mentionné)  
-                4. **Quand** cela a eu lieu (si mentionné)  
-                5. **Comment** cela s’est déroulé (si mentionné)  
-                6. **Pourquoi** cela a eu lieu (uniquement si précisé)  
+                ### ⚠️ Contraintes de forme OBLIGATOIRES :
+                - ✅ **Longueur** : **entre 9 et 146 mots** (**≈ 80 mots recommandés**).
+                - ✅ **Nombre de caractères** : **entre 59 et 927 caractères**.
+                - ✅ **Nombre de phrases** : **1 à 3 phrases** (maximum 8).
+                - ✅ **Un seul paragraphe**, sans puces, sans liste, ni numérotation.
+                - ✅ **Style neutre et journalistique**.
+                - ⛔️ **Aucune introduction ni conclusion**.
+                - ⛔️ **Interdiction absolue de formules comme** :
+                    - "Résumé :", "Voici le résumé :", "En résumé", etc.
+                    - Le résumé doit **commencer directement** par la première phrase.
+                
+                ---
 
-                🟥 **Règle absolue de rédaction du résumé** :
+                ### 🧱 Structure logique imposée :
+                Commence toujours par **[Qui] a annoncé / indiqué**, suivi de **[Quoi]**, **[Quand]**, **[Où]**, **[Comment]**, **[Pourquoi]** si disponible.
 
-                - **Toujours commencer par** :  
-                > **[Qui] a annoncé**, **[Quoi]**, **[Quand]**, **[Où]**, **[Comment]**, **[Pourquoi]**  
-              
-                - ⛔️ Il est **interdit de commencer par l’événement lui-même**, même s’il est mentionné en premier dans le contexte.
+                > Exemple :  
+                > **Le ministère de la Santé a annoncé** une hausse de 15 % des dépenses médicales en 2024 à Alger, liée à l’augmentation des besoins hospitaliers.
 
-                - ✅ **La première phrase du résumé doit impérativement commencer par la source de l'information**, suivie immédiatement de l’événement, sans reformulation.
-
-                > 🟡 **Important** :  
-                > - Le **"Qui"** correspond **à la source initiale de l’information** (ex. : "selon le ministère", "le PDG a déclaré", etc.),  
-                > - Ce **n’est pas le journaliste**, ni "selon le rapport" sauf si c’est ce qui est explicitement mentionné.  
-                > - Si certains éléments sont absents du contexte, **ne les invente jamais**.  
+                Si l’une de ces infos est absente, **ne l’invente jamais**.
 
                 ---
 
-                **Maintenant, applique ces règles au contexte suivant :**  
+                ### 🧾 Règles de contenu :
+                - 🔹 **Ne jamais ajouter d'informations non présentes dans le contexte.**
+                - 🔹 **Reprendre les termes du contexte exactement** : pas de reformulation des noms officiels.
+                - 🔹 **Aucune explication technique ni interprétation** n’est autorisée.
+                - 🔹 **Respect total des chiffres, unités et formulations.**
+                - 🔹 Si le document est long, **ne résume que les faits essentiels et prioritaires**, **sans perdre l'information principale**.
+
+                ---
+
+                ### 💡 Astuce pour gérer les longs contextes :
+                Avant de rédiger le résumé :
+                1. **Identifie les phrases contenant des faits, chiffres, dates, entités ou annonces.**
+                2. **Ignore les détails secondaires ou répétés.**
+                3. **Ne conserve que l’essentiel pour rester dans la limite de mots.**
+
+                ---
+
+                Maintenant, applique les consignes suivantes au contexte ci-dessous.
 
                 Contexte :  
-                {context}  
+                {context}
 
-                Résumé (strictement en {language}) :  
+                ---
+
+                Résumé (en {language}) :
                 """
+
 
 template_titre = """  
                     Ta tâche est de générer un *titre* en respectant strictement les règles suivantes :  
