@@ -134,11 +134,12 @@ def clean_text_extracted_from_pdf(file_path, lang):
                   - Corrige uniquement les fautes d'orthographe, de grammaire et de typographie.
                   - Corrige précisément les erreurs de lettres sans modifier complètement un mot. Par exemple, si le texte contient "ft th", corrige-le en "ftth" sans changer la structure du mot.
                   - Supprime les éléments non pertinents, tels que :
-                    - Les dates de publication (ex : "Publié le :", "Le :").
-                    - Les liens et URL (ex : "https://", "www.", ".dz").
-                    - Les noms de journaux et identifiants techniques(ex : "OUEST TRIBUNE","ALGERIE CONFLUENCES").
-                    - Les en-têtes et Les mots isolés et signatures (ex : "Par Rédaction", "©24H Algérie","MEDIAMARKETING").
-                    - Les numéros de page et balises inutiles (ex : "1/1").
+                        - Les dates de publication (ex : « Publié le : », Le : samedi 28 sept. 2024 », « 18/2/2025 », « dimanche 13 oct. 2024 », « 13 octobre 2024 », « 18/2/2025 », « 18:40 »).
+                        - Les liens et URL (ex : « https:// », « www. », « .dz »).
+                        - Les noms de journaux et identifiants techniques (ex : « LA NOUVELLE RÉPUBLIQUE », « OUEST TRIBUNE », « ALGERIE CONFLUENCES », etc.).
+                        - Les en-têtes, pieds de page, et numéros de page (ex : « 1/1 »), ainsi que toute balise inutile.
+                        - Les mots isolés ou signatures (ex : « Par Rédaction », « ©24H Algérie », « MEDIAMARKETING », etc.).
+                        - Les titres de sections ou rubriques (ex : « Banques », « Economie », « Finance », etc.).
                   - Ne modifie pas le style d'écriture ni le ton du texte.
                   - La sortie doit être strictement fidèle au texte original, sans reformulation ni résumé.
                   - Présente directement le texte corrigé, sans introduction ni indication comme "Voici le texte corrigé"."""
@@ -161,17 +162,39 @@ def clean_text_extracted_from_pdf(file_path, lang):
               messages=[
                 {
                 "role": "system",
-                "content": """أنت مساعد متخصص في تصحيح النصوص العربية المستخرجة من التعرف الضوئي على الحروف (OCR).  
-                - لا تعيد صياغة النص. احتفظ بجميع الجمل بنفس ترتيبها وصيغتها الأصلية.  
-                - قم فقط بتصحيح الأخطاء الإملائية والنحوية والتنسيقية، خاصة تلك التي لا تحمل معنى واضحاً.  
-                - احذف العناصر غير الضرورية مثل:  
-                  - التواريخ، الروابط، أسماء الصحف.  
-                  - أرقام الصفحات، الرموز غير المفهومة، والأجزاء غير المقروءة.  
-                - احذف أي نص غير عربي يظهر في بداية أو نهاية المحتوى إذا لم يكن جزءًا من السياق الأصلي.  
-                - قدم النص مباشرة دون أي مقدمة أو عبارات مثل "إليك النص المصحح".  
-                - لا تستخدم أي علامات خاصة مثل " ** " أو تقسيم النص بفواصل ظاهرة.  
-                - يجب أن يكون النص النهائي واضحاً، منسقاً، وخالياً من الأخطاء، مع الحفاظ على دقة وأمانة المعلومات.  
-"""},
+                "content": """
+                        أنت مساعد متخصص في تصحيح النصوص العربية المستخرجة من التعرف الضوئي على الحروف (OCR).
+
+                        لا تعيد صياغة النص. احتفظ بجميع الجمل بنفس ترتيبها وصيغتها الأصلية.
+
+                        قم فقط بتصحيح الأخطاء الإملائية والنحوية والتنسيقية، خاصة تلك التي لا تحمل معنى واضحاً.
+
+                        احذف العناصر غير الضرورية التالية :
+
+                        1. التواريخ بصيغتها الفرنسية مثل :
+                        samedi 28 sept. 2024, dimanche 13 octobre 2024, 18/2/2025, 13 oct. 2024, وغيرها.
+
+                        2. أسماء الصحف والوسائط مثل :
+                        LA NOUVELLE RÉPUBLIQUE, OUEST TRIBUNE, ALGERIE CONFLUENCES, ©24H Algérie, MEDIAMARKETING, وغيرها.
+
+                       3.  أسماء الأقسام المكتوبة بالفرنسية  مثل :
+                        Culture, Hydrocarbures, Economie, Politique, Banques, وغيرها.
+                        (⚠️ لا تحذف العناوين المكتوبة بالعربية مثل: اقتصاد، محروقات، سياسة)
+
+                       4.  العناوين أو العبارات التقنية مثل :
+                        Publié le :, Le :, Par Rédaction, Page, 1/1, وغيرها.
+
+                       5.  الروابط الإلكترونية مثل :
+                        أي نص يحتوي على https://, www., أو ينتهي بـ .dz
+
+                        الرموز غير المفهومة أو الزوائد في بداية أو نهاية النص.
+
+                        لا تبدأ بأي مقدمة أو تعليق مثل "إليك النص المصحح".
+
+                        لا تستخدم أي علامات خاصة مثل ** أو --- أو فواصل مرئية.
+
+                        يجب أن يكون النص النهائي منسقًا، واضحًا، خاليًا من الأخطاء، ويحتفظ بالمعلومات الأصلية بدقة.
+        """},
                       {
                     "role": "user",
                     "content": text
@@ -212,3 +235,12 @@ def extract_text(file_path):
 
     else:
         raise ValueError("Format non supporté")
+    
+
+if __name__ == "__main__":
+    pdf_path = "./data/RADIOALGERIENNEAR030920241a.pdf"  # remplace par le nom ou le chemin de ton fichier
+    lang = detect_language_from_pdf(pdf_path)
+    cleaned_text = clean_text_extracted_from_pdf(pdf_path, lang)
+    
+    print("\n=== Texte corrigé ===\n")
+    print(cleaned_text)    

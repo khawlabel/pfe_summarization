@@ -11,10 +11,12 @@ from langchain_core.output_parsers import StrOutputParser
 from constants import *
 from outils import extract_text
 from qdrant_client.http.models import Filter, FilterSelector
-from prompts_v0_1 import *
+from langchain.memory import ConversationBufferMemory
+
+from prompts_v0_2 import *
 
 
-## App-V0-1  ##
+## App-V0-2  ##
 
 # 📌 Interface Streamlit
 st.set_page_config(page_title="🧠 AI Assistant", layout="wide")
@@ -71,7 +73,7 @@ uploaded_files = st.sidebar.file_uploader(
 # 🔘 Boutons de contrôle
 col1, col2 = st.sidebar.columns(2)
 with col1:
-    if st.button("🗑 Reset all"):
+    if st.button("🗑️ Reset all"):
         clear_uploaded_files()
         st.session_state["submit_clicked"] = False  # Reset Submit
 
@@ -85,6 +87,8 @@ st.session_state.setdefault("processed_files", set())
 st.session_state.setdefault("summary_generated", False)
 if "summary_ready" not in st.session_state:
     st.session_state["summary_ready"] = False
+st.session_state.setdefault("retrieved_context", None)
+
 
 
 def process_and_store_file(file):
@@ -102,7 +106,7 @@ def process_and_store_file(file):
             vectorstore.add_texts([text], metadatas=[{"file_name": file.name, "file_type": file_type}])
             st.session_state["processed_files"].add(file.name)
     except ValueError as e:
-        st.error(f"⚠ Extraction error: {e}")
+        st.error(f"⚠️ Extraction error: {e}")
     finally:
         os.remove(temp_file_path)
 
@@ -114,9 +118,9 @@ def retrieve_context_with_metadata(query):
 
     formatted_context = "\n\n".join(
         [
-            f"📂 *Fichier*: {doc.metadata.get('file_name', 'Inconnu')}\n"
-            f"📄 *Type*: {doc.metadata.get('file_type', 'Inconnu')}\n"
-            f"🔹 *Contenu*:\n{doc.page_content}"
+            f"📂 **Fichier**: {doc.metadata.get('file_name', 'Inconnu')}\n"
+            f"📄 **Type**: {doc.metadata.get('file_type', 'Inconnu')}\n"
+            f"🔹 **Contenu**:\n{doc.page_content}"
             for doc in retrieved_docs
         ]
     )
@@ -125,8 +129,11 @@ def retrieve_context_with_metadata(query):
 
 # 📌 Chaînes de traitement
 chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm | StrOutputParser())
+chain_titre = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre | llm | StrOutputParser())
 chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
 chain_ameliore_ar  = ({"texte_brut": itemgetter("texte_brut")} | prompt_ameliore_ar | llm2| StrOutputParser())
+chain_traduction  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction | llm2| StrOutputParser())
+memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
 
 # 🛑 Suppression des données uniquement si tous les fichiers ont été supprimés manuellement
 if not uploaded_files and st.session_state["processed_files"]:
@@ -135,6 +142,8 @@ if not uploaded_files and st.session_state["processed_files"]:
     st.session_state["summary_generated"] = False  # Autoriser une nouvelle génération de résumé
     st.session_state.pop("summary_text", None)  # Supprime l'ancien résumé s'il existe
     st.session_state["messages"] = []  # Réinitialise les messages du chat
+    st.session_state["retrieved_context"] = None
+
 
 # 🛑 Suppression des données une seule fois
 if uploaded_files and not st.session_state["summary_generated"]:
@@ -153,46 +162,53 @@ if uploaded_files and st.session_state["submit_clicked"]:
         if "summary_text" not in st.session_state:
             st.session_state["summary_text"] = {"fr": "", "ar": ""}
         query = "Fais un résumé clair et structuré des informations disponibles."
-        context = retrieve_context_with_metadata(query)
+        if st.session_state["retrieved_context"] is None:
+            st.session_state["retrieved_context"] = retrieve_context_with_metadata(query)
+
+        context = st.session_state["retrieved_context"]
         st.markdown('<h2 style="font-size: 22px;">📖 Résumé des documents</h2>', unsafe_allow_html=True)
         st.divider()  # Ligne de séparation visuelle
 
-        # 📌 *Résumé en Français*
-        with st.expander("📌 *Résumé en Français*", expanded=True):
+        # 📌 **Résumé en Français**
+        with st.expander("📌 **Résumé en Français**", expanded=True):
             summary_fr_placeholder = st.empty()
-            if not st.session_state["summary_text"]["fr"]:  # Si le résumé n'existe pas encore
+
+            if not st.session_state["summary_text"]["fr"]:
+                # Générer le titre en streaming
+                titre = ""
+                for chunk in chain_titre.stream({"context": context, "language": "francais"}):
+                    if chunk:
+                        titre += chunk
+                        summary_fr_placeholder.markdown(f"**Titre** : {titre}")
+
+                # Générer le résumé en streaming
+                resume = ""
                 for chunk in chain_resumer.stream({"context": context, "language": "francais"}):
                     if chunk:
-                        st.session_state["summary_text"]["fr"] += chunk
-                        summary_fr_placeholder.markdown(st.session_state["summary_text"]["fr"])
+                        resume += chunk
+                        summary_fr_placeholder.markdown(f"**Titre** : {titre}\n\n**Résumé** : {resume}")
+
+                # Stocker dans la session
+                st.session_state["summary_text"]["fr"] = f"**Titre** : {titre}\n\n**Résumé** : {resume}"
+
             else:
                 summary_fr_placeholder.markdown(st.session_state["summary_text"]["fr"])
 
 
-                # 📌 *Résumé en Arabe*
-        with st.expander("📌 *ملخص باللغة العربية*", expanded=True):
+                # 📌 **Résumé en Arabe**
+        with st.expander("📌 **ملخص باللغة العربية**", expanded=True):
             summary_ar_placeholder = st.empty()
 
             if not st.session_state["summary_text"]["ar"]:
                 # 1. Générer le résumé brut en une seule fois (pas de streaming ici)
-                raw_ar_summary = ""
-                for chunk in chain_resumer.stream({"context": context, "language": "arabe"}):
-                    if chunk:
-                        raw_ar_summary += chunk
-                
-                # 2. Améliorer le résumé en streaming et afficher uniquement le texte corrigé
                 st.session_state["summary_text"]["ar"] = ""
-                for chunk in chain_ameliore_ar.stream({"texte_brut": raw_ar_summary}):
+                for chunk in chain_traduction.stream({"resume_francais": st.session_state["summary_text"]["fr"]}):
                     if chunk:
                         st.session_state["summary_text"]["ar"] += chunk
                         summary_ar_placeholder.markdown(f'<div style="font-size: 21px; text-align: right; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
 
-
-
             else:
                 summary_ar_placeholder.markdown(f'<div style="font-size: 21px; text-align: right; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
-
-
 
 
         # Réinitialiser le bouton Submit après la génération du résumé
@@ -201,16 +217,16 @@ if uploaded_files and st.session_state["submit_clicked"]:
         st.session_state["summary_ready"] = True  # Indiquer que le résumé est prêt
 
 
-    # 💬 *Message après le résumé*
+    # 💬 **Message après le résumé**
     st.markdown('<h3 style="font-size: 20px;">💬 <b>Vous pouvez maintenant poser vos questions dans le chat ci-dessous</b></h3>', unsafe_allow_html=True)
 elif "summary_text" in st.session_state :  # S'affiche uniquement si un résumé existe et qu'aucun fichier n'est uploadé
     st.markdown('<h2 style="font-size: 22px;">📖 Résumé des documents</h2>', unsafe_allow_html=True)
     st.divider()  # Ligne de séparation visuelle
 
-    with st.expander("📌 *Résumé en Français*", expanded=True):
+    with st.expander("📌 **Résumé en Français**", expanded=True):
         st.markdown(st.session_state["summary_text"]["fr"])
 
-    with st.expander("📌 *ملخص باللغة العربية*", expanded=True):
+    with st.expander("📌 **ملخص باللغة العربية**", expanded=True):
         st.markdown(f'<div style="font-size: 21px; text-align: right; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
 
     st.markdown('<h3 style="font-size: 20px;">💬 <b>Vous pouvez maintenant poser vos questions dans le chat ci-dessous</b></h3>', unsafe_allow_html=True)
@@ -221,7 +237,7 @@ for message in st.session_state["messages"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ✅ *Activation du chat après le résumé*
+# ✅ **Activation du chat après le résumé**
 
 user_input = st.chat_input(
     "Ask your questions here..." if st.session_state["summary_ready"] else "❌ Please upload and submit a file first.", 
@@ -238,16 +254,24 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 if user_input:
-    context = retrieve_context_with_metadata(user_input)
     st.session_state["messages"].append({"role": "user", "content": user_input})
-    
-    with st.chat_message("user"):
-        st.markdown(user_input)
 
+     # Création du contexte enrichi avec l'historique
+    chat_history = "\n".join(
+        [f"{msg['role'].capitalize()}: {msg['content']}" for msg in st.session_state["messages"] if msg['role'] != "system"]
+    )
+
+    context = st.session_state["retrieved_context"]
+
+    with st.chat_message("user"):
+        st.markdown(user_input) 
+    
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         response_stream = ""
-        for chunk in chain_chat.stream({"context": context, "question": user_input}):
+        for chunk in chain_chat.stream({
+                                "context": context,
+                                "question": f"{chat_history}\nUser: {user_input}\nAssistant:"}):
             if chunk:
                 response_stream += chunk
                 message_placeholder.markdown(response_stream)
