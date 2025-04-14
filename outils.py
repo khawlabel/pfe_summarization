@@ -228,7 +228,7 @@ def extract_text(file_path):
 
     if file_path_.endswith(".pdf"):
         detected_lang = detect_language_from_pdf(file_path)
-        return extract_text_from_pdf(file_path,detected_lang)
+        return clean_text_extracted_from_pdf(file_path,detected_lang)
 
     elif file_path_.endswith((".mp3", ".wav", ".ogg", ".flac", ".m4a",".mp4", ".avi", ".mov", ".mkv")):
         return extract_text_from_audio_video(file_path)
@@ -236,11 +236,3 @@ def extract_text(file_path):
     else:
         raise ValueError("Format non supporté")
     
-
-if __name__ == "__main__":
-    pdf_path = "./data/RADIOALGERIENNEAR030920241a.pdf"  # remplace par le nom ou le chemin de ton fichier
-    lang = detect_language_from_pdf(pdf_path)
-    cleaned_text = clean_text_extracted_from_pdf(pdf_path, lang)
-    
-    print("\n=== Texte corrigé ===\n")
-    print(cleaned_text)    
