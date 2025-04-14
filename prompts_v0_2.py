@@ -113,7 +113,7 @@ template_titre = """
                     4. ⚠ Tu dois uniquement répondre par le *titre final*, sans explication, sans justification. Pas d'introduction du type "Voici le titre :". Seulement la phrase du titre. Pas plus.
 
                     *Maintenant, applique ces règles au contexte suivant :*  
-
+ 
                     Contexte :  
                     {context}  
 
