@@ -179,20 +179,33 @@ if uploaded_files and st.session_state["submit_clicked"]:
                 for chunk in chain_titre.stream({"context": context, "language": "francais"}):
                     if chunk:
                         titre += chunk
-                        summary_fr_placeholder.markdown(f"**Titre** : {titre}")
-
+                        summary_fr_placeholder.markdown(
+                                            f"""<div style="text-align: justify;"><strong>Titre</strong> : {titre}</div>""",
+                                            unsafe_allow_html=True
+                                        )
                 # Générer le résumé en streaming
                 resume = ""
                 for chunk in chain_resumer.stream({"context": context, "language": "francais"}):
                     if chunk:
                         resume += chunk
-                        summary_fr_placeholder.markdown(f"**Titre** : {titre}\n\n**Résumé** : {resume}")
-
+                        summary_fr_placeholder.markdown(
+                                                    f"""<div style="text-align: justify;">
+                                                            <strong>Titre</strong> : {titre}<br><br>
+                                                            <strong>Résumé</strong> : {resume}
+                                                        </div>""",
+                                                    unsafe_allow_html=True
+                                                )
                 # Stocker dans la session
                 st.session_state["summary_text"]["fr"] = f"**Titre** : {titre}\n\n**Résumé** : {resume}"
 
             else:
-                summary_fr_placeholder.markdown(st.session_state["summary_text"]["fr"])
+                summary_fr_placeholder.markdown(  f'''
+                            <div style=" text-align: justify;">
+                                {st.session_state["summary_text"]["fr"]}
+                            </div>
+                            ''', 
+                            unsafe_allow_html=True
+                        )
 
 
                 # 📌 **Résumé en Arabe**
@@ -205,10 +218,10 @@ if uploaded_files and st.session_state["submit_clicked"]:
                 for chunk in chain_traduction.stream({"resume_francais": st.session_state["summary_text"]["fr"]}):
                     if chunk:
                         st.session_state["summary_text"]["ar"] += chunk
-                        summary_ar_placeholder.markdown(f'<div style="font-size: 21px; text-align: right; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
+                        summary_ar_placeholder.markdown(f'<div style="font-size: 21px; text-align: justify; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
 
             else:
-                summary_ar_placeholder.markdown(f'<div style="font-size: 21px; text-align: right; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
+                summary_ar_placeholder.markdown(f'<div style="font-size: 21px; text-align: justify; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
 
 
         # Réinitialiser le bouton Submit après la génération du résumé
@@ -224,10 +237,16 @@ elif "summary_text" in st.session_state :  # S'affiche uniquement si un résumé
     st.divider()  # Ligne de séparation visuelle
 
     with st.expander("📌 **Résumé en Français**", expanded=True):
-        st.markdown(st.session_state["summary_text"]["fr"])
+        st.markdown(  f'''
+                    <div style="text-align: justify;">
+                        {st.session_state["summary_text"]["fr"]}
+                    </div>
+                    ''', 
+                    unsafe_allow_html=True
+                )
 
     with st.expander("📌 **ملخص باللغة العربية**", expanded=True):
-        st.markdown(f'<div style="font-size: 21px; text-align: right; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size: 21px; text-align: justify; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
 
     st.markdown('<h3 style="font-size: 20px;">💬 <b>Vous pouvez maintenant poser vos questions dans le chat ci-dessous</b></h3>', unsafe_allow_html=True)
 
