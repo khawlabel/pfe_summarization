@@ -110,8 +110,7 @@ template_titre = """
                     - Si une personne ou institution est responsable de l’action → utiliser *Qui puis Quoi*.
                     - Sinon, si un lieu est central → utiliser *Où puis Quoi*.
                     - Sinon, si une date domine → utiliser *Quand puis Quoi*.
-                    4. ⚠ Si "Nadia mohammadi" est cité comme responsable de l’annonce, le titre doit commencer par son nom : *"Nadia mohammadi : ..."*
-                    3. ⚠ Tu dois uniquement répondre par le *titre final*, sans explication, sans justification. Pas d'introduction du type "Voici le titre :". Seulement la phrase du titre. Pas plus.
+                    4. ⚠ Tu dois uniquement répondre par le *titre final*, sans explication, sans justification. Pas d'introduction du type "Voici le titre :". Seulement la phrase du titre. Pas plus.
 
                     *Maintenant, applique ces règles au contexte suivant :*  
 
