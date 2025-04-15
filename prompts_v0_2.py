@@ -61,7 +61,6 @@ template_resumer = """
                 Résumé (en {language}) :
                 """
 
-
 template_titre = """  
                     Ta tâche est de générer un *titre* en respectant strictement les règles suivantes :  
 
@@ -90,7 +89,7 @@ template_titre = """
                     ❌ *Interdiction stricte* de commencer un titre par "Tebboune :", sauf si le texte dit explicitement que *Tebboune lui-même a fait cette déclaration ou pris cette action*.  
                     ✅ Si c'est un ministère ou une institution qui agit ou parle, le titre doit commencer par ce ministère, cette institution ou ce lieu.
                     ⚠ Si le titre généré ne commence PAS par un nom propre, un lieu ou une date, alors il est invalide. Recommence avec l’un des trois modèles : Qui puis Quoi, Où puis Quoi, Quand puis Quoi. 
-                    ⚠ *Ne pas copier ni reformuler partiellement le titre d’origine.*  
+                    ⚠ *Ne pas copier ni reformuler partiellement le titre d’origine.*   
                     ⚠ *Il est interdit de simplement insérer un nom ou un lieu devant le titre d’origine.*  
                     ✅ Le contenu du titre doit être *reconstruit* à partir des faits essentiels du texte.
                     ⚠ *Ne jamais formuler un titre de cette manière* : "Akhbar El Youm : [événement]". Le titre doit débuter par un *nom propre, un **lieu, ou une **date/période*.  
@@ -110,15 +109,19 @@ template_titre = """
                     - Si une personne ou institution est responsable de l’action → utiliser *Qui puis Quoi*.
                     - Sinon, si un lieu est central → utiliser *Où puis Quoi*.
                     - Sinon, si une date domine → utiliser *Quand puis Quoi*.
-                    4. ⚠ Tu dois uniquement répondre par le *titre final*, sans explication, sans justification. Pas d'introduction du type "Voici le titre :". Seulement la phrase du titre. Pas plus.
+                    4. ⚠ Si "Nadia mohammadi" est cité comme responsable de l’annonce, le titre doit commencer par son nom : *"Nadia mohammadi : ..."*
+                    3. ⚠ Tu dois uniquement répondre par le *titre final*, sans explication, sans justification. Pas d'introduction du type "Voici le titre :". Seulement la phrase du titre. Pas plus.
 
                     *Maintenant, applique ces règles au contexte suivant :*  
- 
+
                     Contexte :  
                     {context}  
 
                     Titre (strictement en {language}) :  
-"""
+            """
+
+
+
 
 template_chat = """
 Tu es un assistant intelligent spécialisé dans les questions-réponses, conçu pour fournir des réponses précises, naturelles et complètes en utilisant exclusivement les informations fournies.
