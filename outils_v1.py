@@ -179,7 +179,7 @@ def nettoyer_article(article):
     if buffer:
         lignes_nettoyees.append(buffer.strip())
 
-    return "\n\n".join(lignes_nettoyees)
+    return "\n".join(lignes_nettoyees)
 
 def extraire_articles_pdf(pdf_file):
     """
@@ -210,6 +210,9 @@ def extraire_articles_pdf(pdf_file):
 
             for article in articles_page:
                 nettoye = nettoyer_article(article)
+                print("article :")
+                print(nettoye)
+                print("\n\n")
                 tous_les_articles_nettoyes.append(nettoye)
 
     return tous_les_articles_nettoyes
@@ -217,18 +220,14 @@ def extraire_articles_pdf(pdf_file):
 
 ###################################     sauvegarder dans qdrant     #####################################################
 
+def separer_articles(liste_articles):
+    """
+    Transforme une liste de strings (articles) en une liste de dicts avec ID.
+    
+    Args:
+        liste_articles (List[str]): Liste d'articles déjà extraits et nettoyés.
 
-def separer_articles(text):
-    # Si 'text' est une liste, on la transforme en une seule chaîne
-    if isinstance(text, list):
-        text = "\n\n".join(text)
-    id_compteur = 1
-    # Séparer le texte par des sauts de ligne
-    blocs = text.split('\n\n')  # sépare les blocs d'articles par des doubles sauts de ligne
-    articles = []
-    for bloc in blocs:
-        contenu = bloc.strip()
-        # Ajouter des articles avec un identifiant unique
-        articles.append({"id":id_compteur , "contenu": contenu})
-        id_compteur += 1  # Incrémenter l'ID
-    return articles
+    Returns:
+        List[Dict]: Liste de dictionnaires avec un id et le contenu.
+    """
+    return [{"id": i + 1, "contenu": article.strip()} for i, article in enumerate(liste_articles)]
