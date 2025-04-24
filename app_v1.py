@@ -48,7 +48,7 @@ st.title("📄 Lecteur de PDF avec PyMuPDF")
 
 def clear_uploaded_files():
     """Réinitialisation des fichiers et de la session"""
-    client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
+    client.delete(collection_name=QDRANT_COLLECTION_v1, points_selector=FilterSelector(filter=Filter(must=[])))
     st.session_state.clear()
     st.session_state["file_uploader"] = None
     st.markdown("<meta http-equiv='refresh' content='0'>", unsafe_allow_html=True) 
@@ -56,6 +56,10 @@ def clear_uploaded_files():
 # Uploader dans la sidebar
 uploaded_file = st.sidebar.file_uploader("📥 Charger un fichier PDF", type="pdf")
 
+# Bouton pour réinitialiser toute la session et les documents indexés
+if st.sidebar.button("🔄 Réinitialiser tout"):
+    clear_uploaded_files()
+    
 # 🔄 Si un fichier est chargé, vider la collection Qdrant avant traitement
 if uploaded_file is not None and st.session_state.get("last_uploaded_filename") != uploaded_file.name:
     client.delete(collection_name=QDRANT_COLLECTION_v1, points_selector=FilterSelector(filter=Filter(must=[])))
@@ -66,7 +70,7 @@ if uploaded_file is not None:
     st.sidebar.success("✅ PDF chargé avec succès")
 
     # 🧼 Étape 1 : Extraire + nettoyer les articles
-    articles_nettoyes = extraire_articles_pdf(uploaded_file, nettoyer_texte_brut, decouper_en_articles, nettoyer_article)
+    articles_nettoyes = extraire_articles_pdf(uploaded_file)
 
     # 📑 Étape 2 : Séparer les articles avec un ID
     articles_decoupes = separer_articles(articles_nettoyes)

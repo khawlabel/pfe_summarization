@@ -181,7 +181,7 @@ def nettoyer_article(article):
 
     return "\n\n".join(lignes_nettoyees)
 
-def extraire_articles_pdf(pdf_file, nettoyer_texte_brut, decouper_en_articles, nettoyer_article):
+def extraire_articles_pdf(pdf_file):
     """
     Lit un fichier PDF et retourne une liste de tous les articles nettoyés.
     
