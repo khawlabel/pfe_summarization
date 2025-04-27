@@ -38,7 +38,6 @@ def get_llm(llm_name):
     return ChatGroq(groq_api_key=GROQ_API_KEY_4, model_name=llm_name)
 
 
-
 @st.cache_resource
 def get_reranker_model(model_name):
     return HuggingFaceCrossEncoder(model_name=model_name)
