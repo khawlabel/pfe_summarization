@@ -15,6 +15,7 @@ from langchain.schema import Document
 from operator import itemgetter
 from langchain_core.output_parsers import StrOutputParser
 from prompts_v1 import *
+import re
 from prompts_v0_2 import *
 # Interface Streamlit
 st.set_page_config(page_title="🧠 AI Assistant PDF", layout="wide")
@@ -30,7 +31,9 @@ def get_embedding_model():
 
 @st.cache_resource
 def get_llm(llm_name):
-    return ChatGroq(groq_api_key=GROQ_API_KEY_2, model_name=llm_name)
+    return ChatGroq(groq_api_key=GROQ_API_KEY_3, model_name=llm_name)
+
+
 
 @st.cache_resource
 def get_reranker_model(model_name):
@@ -143,7 +146,7 @@ if uploaded_files and st.session_state.get("submit_clicked", False):
 
                 # 🔍 Faire la recherche AVEC la même question
                 retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 20, "fetch_k": 40})
-                compressor = CrossEncoderReranker(model=reranker_model, top_n=10)
+                compressor = CrossEncoderReranker(model=reranker_model, top_n=8)
                 compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=retriever)
 
                 matching_chunks = compression_retriever.invoke(query)
@@ -153,7 +156,7 @@ if uploaded_files and st.session_state.get("submit_clicked", False):
                     ids_utilises = set()  # Initialiser un set pour éviter les doublons
                     for chunk in matching_chunks:
                         ids_utilises.add(chunk.metadata.get("source_id"))
-                    st.info(f"📰 Articles correspondants dans {uploaded_file.name} : {len(ids_utilises)}")
+                    #st.info(f"📰 Articles correspondants dans {uploaded_file.name} : {len(ids_utilises)}")
 
                     st.subheader(f"Réponses pour {uploaded_file.name}")
                     response_placeholder = st.empty()  # Placeholder unique pour toute la réponse
@@ -164,10 +167,10 @@ if uploaded_files and st.session_state.get("submit_clicked", False):
                     tous_les_resumes = []
 
                     context_blocks = []
-                    response_stream = ""  # Remise à zéro à chaque nouvel article
                     for source_id in ids_utilises:
                         article_data = st.session_state[f"articles_originaux_{uploaded_file.name}"].get(source_id, {})
                         if article_data:
+                            article_stream=""
                             header = f"=== Article {source_id} (Nom du journal : {article_data['pdf_name']}) === \n"
                             context_article=f"{header}\n{article_data['contenu']}"
 
@@ -180,36 +183,45 @@ if uploaded_files and st.session_state.get("submit_clicked", False):
                                             f"""<div style="text-align: justify;"> {response_stream}</div>""",
                                             unsafe_allow_html=True
                                         )
+                                article_stream += chunk  
                             # Ajouter un saut de ligne après la réponse d'un article
+
                             response_stream += "\n\n"  # Ajout d'un saut de ligne pour séparer les articles
+
                         if not article_data:
                             continue
 
-                        st.subheader(f"=== Article {source_id} ===")
-            
-                        # 📤 Générer le titre pour cet article
-                        titre = ""
-                        for chunk in chain_titre.stream({"context": response_stream, "language": "francais"}):
-                            if chunk:
-                                titre += chunk
+                        # Vérifier si response_stream est une courte phrase entre parenthèses
 
-                        # 📤 Générer le résumé normal pour cet article
-                        resume = ""
-                        for chunk in chain_resumer.stream({"context": response_stream, "language": "francais"}):
-                            if chunk:
-                                resume += chunk
+                        text = article_stream.strip()
+                        # Condition pour détecter
+                        if text.startswith("(") and text.endswith(")"):
+                            pass
+                        else:
+                            st.subheader(f"=== Article {source_id} ===")
+                            # 📤 Générer le titre pour cet article
+                            titre = ""
+                            for chunk in chain_titre.stream({"context": article_stream, "language": "francais"}):
+                                if chunk:
+                                    titre += chunk
 
-                        st.markdown(
-                            f"""<div style="text-align: justify;">
-                                    <strong>Titre</strong> : {titre}<br><br>
-                                    <strong>Résumé normal</strong> : {resume}<br><br>
-                                </div>""",
-                            unsafe_allow_html=True
-                        )
+                            # 📤 Générer le résumé normal pour cet article
+                            resume = ""
+                            for chunk in chain_resumer.stream({"context": article_stream, "language": "francais"}):
+                                if chunk:
+                                    resume += chunk
 
-                        # ➡️ Ajouter le titre et le résumé à nos listes
-                        tous_les_titres.append(titre)
-                        tous_les_resumes.append(resume)
+                            st.markdown(
+                                f"""<div style="text-align: justify;">
+                                        <strong>Titre</strong> : {titre}<br><br>
+                                        <strong>Résumé normal</strong> : {resume}<br><br>
+                                    </div>""",
+                                unsafe_allow_html=True
+                            )
+
+                            # ➡️ Ajouter le titre et le résumé à nos listes
+                            tous_les_titres.append(titre)
+                            tous_les_resumes.append(resume)
 
                         # 🧠 ➡️ Après avoir parcouru tous les articles :
 
@@ -247,9 +259,9 @@ if uploaded_files and st.session_state.get("submit_clicked", False):
                                 
                 else:
                     st.warning(f"😕 Aucun chunk pertinent trouvé dans {uploaded_file.name}.")
-        if titres_generaux_par_pdf and resumes_generaux_par_pdf:
+                    
+        if len(titres_generaux_par_pdf) > 1 and len(resumes_generaux_par_pdf) > 1:
             st.subheader("=== Synthèse Finale sur tous les PDF ===")
-
             # 🔹 Concaténer tous les titres généraux
             tous_les_titres_concatenes = "\n".join(titres_generaux_par_pdf)
             titre_final_global = ""
