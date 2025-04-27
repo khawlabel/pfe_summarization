@@ -14,8 +14,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 from operator import itemgetter
 from langchain_core.output_parsers import StrOutputParser
-from prompts_v1 import *
-
+from prompts_v1_khawla import *
+from operator import itemgetter
+from prompts_v0_2 import *
 # Interface Streamlit
 st.set_page_config(page_title="🧠 AI Assistant PDF", layout="wide")
 
@@ -30,7 +31,7 @@ def get_embedding_model():
 
 @st.cache_resource
 def get_llm(llm_name):
-    return ChatGroq(groq_api_key=GROQ_API_KEY, model_name=llm_name)
+    return ChatGroq(groq_api_key=GROQ_API_KEY_2, model_name=llm_name)
 
 @st.cache_resource
 def get_reranker_model(model_name):
@@ -51,6 +52,7 @@ if not client.collection_exists(QDRANT_COLLECTION_v1):
 vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION_v1, embeddings=embedding_model)
 llm = get_llm(LLM_NAME_4)
 reranker_model = get_reranker_model("BAAI/bge-reranker-v2-m3")
+llm2=get_llm(LLM_NAME_4)
 
 # 🔁 Réinitialisation
 def clear_uploaded_files():
@@ -113,6 +115,10 @@ if uploaded_file is not None:
         st.sidebar.info("📄 PDF déjà chargé et indexé.")
 
 chain_client = ({"context": itemgetter("context"), "user_query": itemgetter("user_query")} | prompt_client | llm | StrOutputParser())
+chain_titre = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre | llm | StrOutputParser())
+chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
+chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm | StrOutputParser())
+chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm | StrOutputParser())
 
 # Recherche par requête
 st.title("🔎 Recherche intelligente dans le PDF")
@@ -135,23 +141,72 @@ if query:
 
         st.info(f"📰 Articles correspondants : {len(ids_utilises)}")
 
-        # 🔹 Construire un unique bloc de contexte avec tous les articles
-        context_blocks = []
+        # 📝 Stocker tous les titres et tous les résumés
+        tous_les_titres = []
+        tous_les_resumes = []
+
+        # 🔹 Boucler sur chaque article séparément
         for source_id in ids_utilises:
             article_complet = st.session_state["articles_originaux"].get(source_id, "")
-            if article_complet:
-                header = f"=== Article {source_id} ==="
-                context_blocks.append(f"{header}\n{article_complet}")
-        full_context = "\n\n".join(context_blocks)
+            if not article_complet:
+                continue
 
-        # 📤 Appel unique au LLM en streaming
-        response_placeholder = st.empty()
-        response_stream = ""
-        for chunk in chain_client.stream({
-            "user_query": query,
-            "context": full_context
-        }):
-            response_stream += chunk
-            response_placeholder.markdown(response_stream)
+            st.subheader(f"=== Article {source_id} ===")
+            
+            # 📤 Générer le titre pour cet article
+            titre = ""
+            for chunk in chain_titre.stream({"context": article_complet, "language": "francais"}):
+                if chunk:
+                    titre += chunk
+
+            # 📤 Générer le résumé normal pour cet article
+            resume = ""
+            for chunk in chain_resumer.stream({"context": article_complet, "language": "francais"}):
+                if chunk:
+                    resume += chunk
+
+
+            st.markdown(
+                f"""<div style="text-align: justify;">
+                        <strong>Titre</strong> : {titre}<br><br>
+                        <strong>Résumé normal</strong> : {resume}<br><br>
+                    </div>""",
+                unsafe_allow_html=True
+            )
+
+            # ➡️ Ajouter le titre et le résumé à nos listes
+            tous_les_titres.append(titre)
+            tous_les_resumes.append(resume)
+
+        # 🧠 ➡️ Après avoir parcouru tous les articles :
+
+        if tous_les_titres and tous_les_resumes:
+            st.subheader("=== Synthèse générale ===")
+
+            # 🔹 Concaténer tous les titres pour générer UN titre général
+            titres_concatenes = "\n".join(tous_les_titres)
+            titre_general = ""
+            for chunk in chain_titre_general.stream({"context": titres_concatenes, "language": "francais"}):
+                if chunk:
+                    titre_general += chunk
+
+            # 🔹 Concaténer tous les résumés pour générer UN résumé général
+            resumes_concatenes = "\n".join(tous_les_resumes)
+            resume_general_final = ""
+            for chunk in chain_resumer_general.stream({"context": resumes_concatenes, "language": "francais"}):
+                if chunk:
+                    resume_general_final += chunk
+
+            # ➡️ Afficher le titre général et le résumé général final
+            st.markdown(
+                f"""<div style="text-align: justify;">
+                        <h2>Titre Général :</h2>
+                        <p><strong>{titre_general}</strong></p><br>
+                        <h2 >Résumé Général :</h2>
+                        <p><strong>{resume_general_final}</strong></p><br>
+                    </div>""",
+                unsafe_allow_html=True
+            )
+
     else:
         st.warning("😕 Aucun chunk pertinent trouvé.")
