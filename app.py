@@ -48,13 +48,13 @@ embedding_model = get_embedding_model()
 vector_size = embedding_model.client.get_sentence_embedding_dimension()
 
 # Création collection si besoin
-if not client.collection_exists(QDRANT_COLLECTION):
+if not client.collection_exists(QDRANT_COLLECTION_v1):
     client.create_collection(
         collection_name=QDRANT_COLLECTION_v1,
         vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
     )
 
-vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION, embeddings=embedding_model)
+vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION_v1, embeddings=embedding_model)
 llm = get_llm(LLM_NAME_4)
 reranker_model = get_reranker_model("BAAI/bge-reranker-v2-m3")
 chain_client = ({"context": itemgetter("context"), "user_query": itemgetter("user_query")} | prompt_client | llm | StrOutputParser())
@@ -65,7 +65,7 @@ chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("
 
 # 🔁 Réinitialisation
 def clear_uploaded_files():
-    client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
+    client.delete(collection_name=QDRANT_COLLECTION_v1, points_selector=FilterSelector(filter=Filter(must=[])))
     st.session_state.clear()
     st.session_state["file_uploader"] = None
     st.markdown("<meta http-equiv='refresh' content='0'>", unsafe_allow_html=True)
@@ -111,7 +111,7 @@ if uploaded_files and st.session_state.get("submit_clicked", False):
 
             with st.container():
                 # 🔥 Avant de traiter ce fichier : vider la collection
-                client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
+                client.delete(collection_name=QDRANT_COLLECTION_v1, points_selector=FilterSelector(filter=Filter(must=[])))
 
                 # 🔄 Extraction et indexation
                 articles_nettoyes = extraire_articles_pdf(uploaded_file)
