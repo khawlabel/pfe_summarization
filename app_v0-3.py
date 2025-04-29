@@ -12,7 +12,7 @@ from constants import *
 from outils import extract_text
 from qdrant_client.http.models import Filter, FilterSelector
 from langchain.memory import ConversationBufferMemory
-
+from langchain.agents import initialize_agent, Tool, AgentType
 from prompts_v0_2 import *
 
 
@@ -73,7 +73,7 @@ uploaded_files = st.sidebar.file_uploader(
 # 🔘 Boutons de contrôle
 col1, col2 = st.sidebar.columns(2)
 with col1:
-    if st.button("🗑️ Reset all"):
+    if st.button("🗑 Reset all"):
         clear_uploaded_files()
         st.session_state["submit_clicked"] = False  # Reset Submit
 
@@ -106,7 +106,7 @@ def process_and_store_file(file):
             vectorstore.add_texts([text], metadatas=[{"file_name": file.name, "file_type": file_type}])
             st.session_state["processed_files"].add(file.name)
     except ValueError as e:
-        st.error(f"⚠️ Extraction error: {e}")
+        st.error(f"⚠ Extraction error: {e}")
     finally:
         os.remove(temp_file_path)
 
@@ -118,14 +118,39 @@ def retrieve_context_with_metadata(query):
 
     formatted_context = "\n\n".join(
         [
-            f"📂 **Fichier**: {doc.metadata.get('file_name', 'Inconnu')}\n"
-            f"📄 **Type**: {doc.metadata.get('file_type', 'Inconnu')}\n"
-            f"🔹 **Contenu**:\n{doc.page_content}"
+            f"📂 *Fichier*: {doc.metadata.get('file_name', 'Inconnu')}\n"
+            f"📄 *Type*: {doc.metadata.get('file_type', 'Inconnu')}\n"
+            f"🔹 *Contenu*:\n{doc.page_content}"
             for doc in retrieved_docs
         ]
     )
 
     return formatted_context
+
+def document_retrieval_tool(query: str) -> str:
+    context = st.session_state.get("retrieved_context", "")
+    prompt = f"Contexte :\n{context}\n\nQuestion : {query}"
+    return prompt  # C'est ce que l'agent envoie ensuite au LLM
+
+# Définir les outils à utiliser par l'agent
+tools = [
+    Tool(
+        name="Document Retrieval",
+        func=document_retrieval_tool,
+        description = "Récupère les informations pertinentes à partir des documents et répond aux questions des utilisateurs de manière claire, précise et structurée."
+
+    )
+]
+
+# Initialiser l'agent avec des outils
+agent = initialize_agent(
+    tools=tools,
+    llm=llm2,
+    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    verbose=True,
+    handle_parsing_errors=True  # Activer cette option
+)
+
 
 # 📌 Chaînes de traitement
 chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm | StrOutputParser())
@@ -169,8 +194,8 @@ if uploaded_files and st.session_state["submit_clicked"]:
         st.markdown('<h2 style="font-size: 22px;">📖 Résumé des documents</h2>', unsafe_allow_html=True)
         st.divider()  # Ligne de séparation visuelle
 
-        # 📌 **Résumé en Français**
-        with st.expander("📌 **Résumé en Français**", expanded=True):
+        # 📌 *Résumé en Français*
+        with st.expander("📌 *Résumé en Français*", expanded=True):
             summary_fr_placeholder = st.empty()
 
             if not st.session_state["summary_text"]["fr"]:
@@ -196,7 +221,7 @@ if uploaded_files and st.session_state["submit_clicked"]:
                                                     unsafe_allow_html=True
                                                 )
                 # Stocker dans la session
-                st.session_state["summary_text"]["fr"] = f"**Titre** : {titre}\n\n**Résumé** : {resume}"
+                st.session_state["summary_text"]["fr"] = f"*Titre* : {titre}\n\n*Résumé* : {resume}"
 
             else:
                 summary_fr_placeholder.markdown(  f'''
@@ -208,8 +233,8 @@ if uploaded_files and st.session_state["submit_clicked"]:
                         )
 
 
-                # 📌 **Résumé en Arabe**
-        with st.expander("📌 **ملخص باللغة العربية**", expanded=True):
+                # 📌 *Résumé en Arabe*
+        with st.expander("📌 *ملخص باللغة العربية*", expanded=True):
             summary_ar_placeholder = st.empty()
 
             if not st.session_state["summary_text"]["ar"]:
@@ -230,13 +255,13 @@ if uploaded_files and st.session_state["submit_clicked"]:
         st.session_state["summary_ready"] = True  # Indiquer que le résumé est prêt
 
 
-    # 💬 **Message après le résumé**
+    # 💬 *Message après le résumé*
     st.markdown('<h3 style="font-size: 20px;">💬 <b>Vous pouvez maintenant poser vos questions dans le chat ci-dessous</b></h3>', unsafe_allow_html=True)
 elif "summary_text" in st.session_state :  # S'affiche uniquement si un résumé existe et qu'aucun fichier n'est uploadé
     st.markdown('<h2 style="font-size: 22px;">📖 Résumé des documents</h2>', unsafe_allow_html=True)
     st.divider()  # Ligne de séparation visuelle
 
-    with st.expander("📌 **Résumé en Français**", expanded=True):
+    with st.expander("📌 *Résumé en Français*", expanded=True):
         st.markdown(  f'''
                     <div style="text-align: justify;">
                         {st.session_state["summary_text"]["fr"]}
@@ -245,7 +270,7 @@ elif "summary_text" in st.session_state :  # S'affiche uniquement si un résumé
                     unsafe_allow_html=True
                 )
 
-    with st.expander("📌 **ملخص باللغة العربية**", expanded=True):
+    with st.expander("📌 *ملخص باللغة العربية*", expanded=True):
         st.markdown(f'<div style="font-size: 21px; text-align: justify; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
 
     st.markdown('<h3 style="font-size: 20px;">💬 <b>Vous pouvez maintenant poser vos questions dans le chat ci-dessous</b></h3>', unsafe_allow_html=True)
@@ -256,7 +281,7 @@ for message in st.session_state["messages"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ✅ **Activation du chat après le résumé**
+# ✅ *Activation du chat après le résumé*
 
 user_input = st.chat_input(
     "Ask your questions here..." if st.session_state["summary_ready"] else "❌ Please upload and submit a file first.", 
@@ -288,11 +313,8 @@ if user_input:
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         response_stream = ""
-        for chunk in chain_chat.stream({
-                                "context": context,
-                                "question": f"{chat_history}\nUser: {user_input}\nAssistant:"}):
-            if chunk:
-                response_stream += chunk
-                message_placeholder.markdown(response_stream)
 
-        st.session_state["messages"].append({"role": "assistant", "content": response_stream})
+        response = agent.run(user_input)
+        message_placeholder.markdown(response)
+
+        st.session_state["messages"].append({"role": "assistant", "content": response})
