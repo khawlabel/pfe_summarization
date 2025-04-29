@@ -13,8 +13,8 @@ from outils import extract_text
 from qdrant_client.http.models import Filter, FilterSelector
 from langchain.memory import ConversationBufferMemory
 from langchain.agents import initialize_agent, Tool, AgentType
-from prompts_v0_2 import *
-from prompts_v1_khawla import *
+from prompts_v0_3 import *
+
 
 ## App-V0-2  ##
 
@@ -162,10 +162,7 @@ agent = initialize_agent(
 
 
 # 📌 Chaînes de traitement
-chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm | StrOutputParser())
-chain_titre = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre | llm | StrOutputParser())
 chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
-chain_ameliore_ar  = ({"texte_brut": itemgetter("texte_brut")} | prompt_ameliore_ar | llm2| StrOutputParser())
 chain_traduction  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction | llm2| StrOutputParser())
 chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm | StrOutputParser())
 chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm | StrOutputParser())
