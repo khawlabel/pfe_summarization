@@ -14,7 +14,7 @@ from qdrant_client.http.models import Filter, FilterSelector
 from langchain.memory import ConversationBufferMemory
 from langchain.agents import initialize_agent, Tool, AgentType
 from prompts_v0_2 import *
-
+from prompts_v1_khawla import *
 
 ## App-V0-2  ##
 
@@ -46,7 +46,7 @@ vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION, embedding
 # 🔥 Chargement du modèle Groq avec mise en cache
 @st.cache_resource
 def get_llm(llm_name):
-    return ChatGroq(groq_api_key=GROQ_API_KEY, model_name=llm_name)
+    return ChatGroq(groq_api_key=GROQ_API_KEY_2, model_name=llm_name)
 
 llm = get_llm(LLM_NAME_1)
 llm2=get_llm(LLM_NAME_4)
@@ -61,7 +61,11 @@ st.sidebar.header("📂 Upload your files:")
 if "file_uploader_key" not in st.session_state:
     st.session_state["file_uploader_key"] = 0
 if "submit_clicked" not in st.session_state:
-    st.session_state["submit_clicked"] = False  # ⚡ État du bouton Submit
+    st.session_state["submit_clicked"] = False 
+if "titles_per_file" not in st.session_state:
+    st.session_state["titles_per_file"] = None
+if "resumes_per_file" not in st.session_state:
+    st.session_state["resumes_per_file"] = []
 
 uploaded_files = st.sidebar.file_uploader(
     "Choose your files ",
@@ -87,7 +91,8 @@ st.session_state.setdefault("processed_files", set())
 st.session_state.setdefault("summary_generated", False)
 if "summary_ready" not in st.session_state:
     st.session_state["summary_ready"] = False
-st.session_state.setdefault("retrieved_context", None)
+st.session_state.setdefault("retrieved_contexts", [])
+
 
 
 
@@ -110,11 +115,14 @@ def process_and_store_file(file):
     finally:
         os.remove(temp_file_path)
 
-def retrieve_context_with_metadata(query):
-    """Récupère le contexte pertinent pour la requête"""
-    number_of_sources = len(st.session_state["processed_files"])
-    retriever = vectorstore.as_retriever(search_kwargs={"k": number_of_sources})
+def retrieve_context_with_metadata_file(query, file_name=None):
+    """Récupère le contexte pertinent pour la requête, éventuellement filtré par fichier"""
+    retriever = vectorstore.as_retriever(search_kwargs={"k": len(st.session_state["processed_files"])})
     retrieved_docs = retriever.invoke(query)
+
+    if file_name:
+        # Ne garder que les documents liés à ce fichier
+        retrieved_docs = [doc for doc in retrieved_docs if doc.metadata.get("file_name") == file_name]
 
     formatted_context = "\n\n".join(
         [
@@ -126,6 +134,7 @@ def retrieve_context_with_metadata(query):
     )
 
     return formatted_context
+
 
 def document_retrieval_tool(query: str) -> str:
     context = st.session_state.get("retrieved_context", "")
@@ -158,6 +167,9 @@ chain_titre = ({"context": itemgetter("context"), "language": itemgetter("langua
 chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
 chain_ameliore_ar  = ({"texte_brut": itemgetter("texte_brut")} | prompt_ameliore_ar | llm2| StrOutputParser())
 chain_traduction  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction | llm2| StrOutputParser())
+chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm | StrOutputParser())
+chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm | StrOutputParser())
+
 memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
 
 # 🛑 Suppression des données uniquement si tous les fichiers ont été supprimés manuellement
@@ -167,8 +179,9 @@ if not uploaded_files and st.session_state["processed_files"]:
     st.session_state["summary_generated"] = False  # Autoriser une nouvelle génération de résumé
     st.session_state.pop("summary_text", None)  # Supprime l'ancien résumé s'il existe
     st.session_state["messages"] = []  # Réinitialise les messages du chat
-    st.session_state["retrieved_context"] = None
-
+    st.session_state.setdefault("retrieved_contexts", [])
+    st.session_state["titles_per_file"] = None
+    st.session_state["resumes_per_file"] = []
 
 # 🛑 Suppression des données une seule fois
 if uploaded_files and not st.session_state["summary_generated"]:
@@ -183,14 +196,24 @@ if uploaded_files and st.session_state["submit_clicked"]:
 
     # 📖 Génération du résumé seulement si de nouveaux fichiers sont présents
     if uploaded_files:
+        query = "Fais un résumé clair et structuré des informations disponibles."
+        for idx, uploaded_file in enumerate(uploaded_files):
+            context = retrieve_context_with_metadata_file(query, file_name=uploaded_file.name)
+
+            st.session_state["retrieved_contexts"].append(context)
+
+            # Générer le résumé
+            resume = ""
+            for chunk in chain_resumer.stream({"context": context, "language": "francais"}):
+                if chunk:
+                    resume += chunk
+            print(uploaded_file.name,"resumer: ",resume)
+
+            st.session_state["resumes_per_file"].append(resume)
+
         # Initialisation des sessions si elles n'existent pas
         if "summary_text" not in st.session_state:
-            st.session_state["summary_text"] = {"fr": "", "ar": ""}
-        query = "Fais un résumé clair et structuré des informations disponibles."
-        if st.session_state["retrieved_context"] is None:
-            st.session_state["retrieved_context"] = retrieve_context_with_metadata(query)
-
-        context = st.session_state["retrieved_context"]
+            st.session_state["summary_text"] = {"fr": "", "ar": ""} 
         st.markdown('<h2 style="font-size: 22px;">📖 Résumé des documents</h2>', unsafe_allow_html=True)
         st.divider()  # Ligne de séparation visuelle
 
@@ -199,39 +222,49 @@ if uploaded_files and st.session_state["submit_clicked"]:
             summary_fr_placeholder = st.empty()
 
             if not st.session_state["summary_text"]["fr"]:
+                # Cas de plusieurs fichiers → faire appel à titre/résumé global
+                all_resumes = "\n\n".join(st.session_state["resumes_per_file"])
                 # Générer le titre en streaming
                 titre = ""
-                for chunk in chain_titre.stream({"context": context, "language": "francais"}):
+                for chunk in chain_titre_general.stream({"context": all_resumes, "language": "francais"}):
                     if chunk:
                         titre += chunk
                         summary_fr_placeholder.markdown(
-                                            f"""<div style="text-align: justify;"><strong>Titre</strong> : {titre}</div>""",
-                                            unsafe_allow_html=True
-                                        )
-                # Générer le résumé en streaming
-                resume = ""
-                for chunk in chain_resumer.stream({"context": context, "language": "francais"}):
-                    if chunk:
-                        resume += chunk
-                        summary_fr_placeholder.markdown(
-                                                    f"""<div style="text-align: justify;">
-                                                            <strong>Titre</strong> : {titre}<br><br>
-                                                            <strong>Résumé</strong> : {resume}
-                                                        </div>""",
-                                                    unsafe_allow_html=True
-                                                )
-                # Stocker dans la session
-                st.session_state["summary_text"]["fr"] = f"*Titre* : {titre}\n\n*Résumé* : {resume}"
-
-            else:
-                summary_fr_placeholder.markdown(  f'''
-                            <div style=" text-align: justify;">
-                                {st.session_state["summary_text"]["fr"]}
-                            </div>
-                            ''', 
+                            f"""<div style="text-align: justify;"><strong>Titre</strong> : {titre}</div>""",
                             unsafe_allow_html=True
                         )
+                st.session_state["titles_per_file"]=titre
+                if len(uploaded_files) == 1:
+                    # Cas d’un seul fichier → utiliser le résumé déjà généré
+                    titre = st.session_state["titles_per_file"]
+                    resume = st.session_state["resumes_per_file"][0]
 
+                    summary_fr_placeholder.markdown(
+                        f"""<div style="text-align: justify;">
+                                <strong>Titre</strong> : {titre}<br><br>
+                                <strong>Résumé</strong> : {resume}
+                            </div>""",
+                        unsafe_allow_html=True
+                    )
+
+                    st.session_state["summary_text"]["fr"] = f"*Titre* : {titre}\n\n*Résumé* : {resume}"
+                else:
+                    all_resumes = "\n\n".join(st.session_state["resumes_per_file"])
+                    titre = st.session_state["titles_per_file"]
+                    # Générer le résumé en streaming
+                    resume = ""
+                    for chunk in chain_resumer_general.stream({"context": all_resumes, "language": "francais"}):
+                        if chunk:
+                            resume += chunk
+                            summary_fr_placeholder.markdown(
+                                f"""<div style="text-align: justify;">
+                                        <strong>Titre</strong> : {titre}<br><br>
+                                        <strong>Résumé</strong> : {resume}
+                                    </div>""",
+                                unsafe_allow_html=True
+                            )
+
+                    st.session_state["summary_text"]["fr"] = f"*Titre* : {titre}\n\n*Résumé* : {resume}"
 
                 # 📌 *Résumé en Arabe*
         with st.expander("📌 *ملخص باللغة العربية*", expanded=True):
@@ -305,7 +338,7 @@ if user_input:
         [f"{msg['role'].capitalize()}: {msg['content']}" for msg in st.session_state["messages"] if msg['role'] != "system"]
     )
 
-    context = st.session_state["retrieved_context"]
+    context = st.session_state["retrieved_contexts"]
 
     with st.chat_message("user"):
         st.markdown(user_input) 

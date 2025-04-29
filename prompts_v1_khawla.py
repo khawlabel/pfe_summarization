@@ -76,36 +76,36 @@ resumer_general="""
 
 """
 template_titre_general = """  
-Ta tâche est de générer un *titre général* en respectant strictement les règles suivantes :  
+Ta tâche est de générer un *titre général* à partir des différents résumés fournis, en respectant strictement les règles suivantes :  
 
 ### *Contraintes sur le titre général* :
 
-Le titre général doit obligatoirement être reformulé selon *un des trois modèles suivants*, choisis selon l’élément le plus mis en valeur dans l’ensemble des titres donnés :
+Le titre général doit obligatoirement être reformulé selon *un des trois modèles suivants*, choisis selon l’élément le plus mis en valeur dans l’ensemble des résumés donnés :
 
 1. *Qui puis Quoi*  
-- À utiliser si une *personne, institution ou groupe* est le sujet principal commun aux différents titres.  
-- Le titre commence par le *nom exact* suivi de l’action ou du résumé de l’ensemble des événements.  
+- À utiliser si une *personne, institution ou groupe* est le sujet principal commun aux différents résumés.  
+- Le titre commence par le *nom exact* suivi de l’action ou du résumé de l’ensemble des faits.  
 - Exemple : Sonatrach : nouvelles stratégies et projets de développement en Algérie.
 
 2. *Où puis Quoi*  
-- À utiliser si un *lieu* est le fil conducteur principal entre les différents titres.  
-- Le titre commence par le *lieu* (ville, région, pays), suivi du résumé des actions ou événements liés.  
+- À utiliser si un *lieu* est le fil conducteur principal entre les différents résumés.  
+- Le titre commence par le *lieu* (ville, région, pays), suivi du résumé des faits ou dynamiques décrites.  
 - Exemple : Algérie : investissements renforcés dans le secteur énergétique.
 
 3. *Quand puis Quoi* ⚠ (Rare)  
-- À utiliser uniquement si la *date ou la période* est clairement l’élément le plus important reliant tous les titres.  
-- Le titre commence par la *période* ou la *date* suivie d’un résumé de l'ensemble des événements.  
+- À utiliser uniquement si la *date ou la période* est clairement l’élément le plus important reliant tous les résumés.  
+- Le titre commence par la *période* ou la *date*, suivie du résumé des événements ou dynamiques.  
 - Exemple : En 2025 : l'Algérie accélère ses projets d'infrastructures et d'exportation énergétique.
 
-⚠ *Ne jamais mentionner une personne, une institution ou un lieu qui n’est pas explicitement mentionné dans les titres donnés.*  
-⚠ Le nom cité dans le titre général doit apparaître dans les titres fournis et être réellement central.  
-⚠ *Ne pas simplement coller les titres ensemble.* Il faut créer une reformulation synthétique qui capture l’idée générale.
+⚠ *Ne jamais mentionner une personne, une institution ou un lieu qui n’est pas explicitement mentionné dans les résumés donnés.*  
+⚠ Le nom cité dans le titre général doit apparaître dans les résumés fournis et être réellement central.  
+⚠ *Ne pas simplement coller les résumés ensemble.* Il faut créer une reformulation synthétique qui capture l’idée dominante.
 
-✅ Le contenu du titre général doit *synthétiser fidèlement* l'information sans répéter mot à mot les titres existants.  
-⚠ *Ne jamais copier intégralement un des titres donnés.*  
-⚠ *Ne jamais formuler de titre de la manière "Journal X : ..."*.  
+✅ Le contenu du titre général doit *synthétiser fidèlement* les informations, sans copier mot à mot les résumés existants.  
+⚠ *Ne jamais reprendre intégralement un des résumés comme titre.*  
+⚠ *Ne jamais formuler le titre de la manière "Résumé : ..." ou "Document : ..."*.  
 ✅ Toujours commencer par un *nom propre*, un *lieu* ou une *date/période*.  
-❌ Jamais commencer par des mots vagues comme "Actualités", "Développements", etc.
+❌ Ne jamais commencer par des mots vagues comme "Actualités", "Informations", etc.
 
 ### ✅ Étape de validation obligatoire du TITRE GÉNÉRAL :
 
@@ -114,15 +114,15 @@ Le titre général doit obligatoirement être reformulé selon *un des trois mod
 - soit un *lieu*,
 - soit une *date/période*.
 2. Si aucun des trois n’est en première position, le titre est *invalide* : *recommencer la génération*.
-3. Identifier d'abord dans l’ensemble des titres :
+3. Identifier d'abord dans l’ensemble des résumés :
 - Si une personne ou institution est centrale → utiliser *Qui puis Quoi*.
 - Sinon, si un lieu est central → utiliser *Où puis Quoi*.
 - Sinon, si une date est l’élément fédérateur → utiliser *Quand puis Quoi*.
 4. Tu dois uniquement répondre par le *titre final*, sans explication, sans justification. Aucun texte supplémentaire n’est autorisé.
 
-*Maintenant, applique ces règles aux titres suivants :*  
+*Maintenant, applique ces règles aux résumés suivants :*  
 
-Titres :  
+Résumés :  
 {context}  
 
 Titre général (strictement en {language}) :  
