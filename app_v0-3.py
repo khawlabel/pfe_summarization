@@ -14,6 +14,7 @@ from qdrant_client.http.models import Filter, FilterSelector
 from langchain.memory import ConversationBufferMemory
 from langchain.agents import initialize_agent, Tool, AgentType
 from prompts_v0_3 import *
+from langchain.prompts import MessagesPlaceholder
 
 
 ## App-V0-2  ##
@@ -46,7 +47,7 @@ vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION, embedding
 # 🔥 Chargement du modèle Groq avec mise en cache
 @st.cache_resource
 def get_llm(llm_name):
-    return ChatGroq(groq_api_key=GROQ_API_KEY_2, model_name=llm_name)
+    return ChatGroq(groq_api_key=GROQ_API_KEY_3, model_name=llm_name)
 
 llm = get_llm(LLM_NAME_1)
 llm2=get_llm(LLM_NAME_4)
@@ -94,8 +95,6 @@ if "summary_ready" not in st.session_state:
 st.session_state.setdefault("retrieved_contexts", [])
 
 
-
-
 def process_and_store_file(file):
     """Extrait le texte du fichier et stocke les embeddings"""
     suffix = os.path.splitext(file.name)[1]
@@ -137,9 +136,35 @@ def retrieve_context_with_metadata_file(query, file_name=None):
 
 
 def document_retrieval_tool(query: str) -> str:
-    context = st.session_state.get("retrieved_context", "")
+    context = st.session_state.get("retrieved_contexts", "")
     prompt = f"Contexte :\n{context}\n\nQuestion : {query}"
     return prompt  # C'est ce que l'agent envoie ensuite au LLM
+
+
+def outil_consulter_memoire(_):
+    messages = memory.chat_memory.messages
+    if not messages:
+        return "La mémoire est actuellement vide."
+    
+    historique = []
+    for msg in messages:
+        if msg.type == "human":
+            historique.append(f"👤 Utilisateur : {msg.content}")
+        elif msg.type == "ai":
+            historique.append(f"🤖 Assistant : {msg.content}")
+        else:
+            historique.append(f"{msg.type.capitalize()} : {msg.content}")
+    
+    return "\n\n".join(historique)
+
+chat_history = MessagesPlaceholder(variable_name="chat_history")
+
+if "memory" not in st.session_state:
+    st.session_state.memory = ConversationBufferMemory(
+        memory_key="chat_history",
+        return_messages=True
+    )
+memory = st.session_state.memory
 
 # Définir les outils à utiliser par l'agent
 tools = [
@@ -148,17 +173,27 @@ tools = [
         func=document_retrieval_tool,
         description = "Récupère les informations pertinentes à partir des documents et répond aux questions des utilisateurs de manière claire, précise et structurée."
 
+    ),
+    Tool(
+        name="Consulter la mémoire",
+        func=outil_consulter_memoire,
+        description="Permet de consulter l'historique de la conversation entre l'utilisateur et l'assistant."
     )
 ]
 
 # Initialiser l'agent avec des outils
-agent = initialize_agent(
-    tools=tools,
-    llm=llm2,
-    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    verbose=True,
-    handle_parsing_errors=True  # Activer cette option
-)
+if "agent" not in st.session_state:
+    st.session_state.agent = initialize_agent(
+        tools=tools,
+        llm=llm2,
+        agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        verbose=True,
+        handle_parsing_errors=True,
+        memory=memory
+        
+    )
+
+agent = st.session_state.agent
 
 
 # 📌 Chaînes de traitement
@@ -166,8 +201,6 @@ chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("lang
 chain_traduction  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction | llm2| StrOutputParser())
 chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm | StrOutputParser())
 chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm | StrOutputParser())
-
-memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
 
 # 🛑 Suppression des données uniquement si tous les fichiers ont été supprimés manuellement
 if not uploaded_files and st.session_state["processed_files"]:
@@ -327,24 +360,17 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
+
 if user_input:
-    st.session_state["messages"].append({"role": "user", "content": user_input})
-
-     # Création du contexte enrichi avec l'historique
-    chat_history = "\n".join(
-        [f"{msg['role'].capitalize()}: {msg['content']}" for msg in st.session_state["messages"] if msg['role'] != "system"]
-    )
-
-    context = st.session_state["retrieved_contexts"]
-
+    # Afficher le message utilisateur
+    st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
-        st.markdown(user_input) 
-    
+        st.markdown(user_input)
+
+    # Réponse de l'agent
     with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        response_stream = ""
-
-        response = agent.run(user_input)
-        message_placeholder.markdown(response)
-
-        st.session_state["messages"].append({"role": "assistant", "content": response})
+        with st.spinner("Analyse en cours..."):
+            response = agent.run(user_input)
+            st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
+        
