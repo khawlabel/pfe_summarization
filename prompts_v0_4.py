@@ -179,43 +179,45 @@ template_traduction =  """
     Voici le texte à traduire : 
     {resume_francais}
     """
-
 template_support = """
-        Tu es un assistant spécialisé dans la synthèse de documents.
+Tu es un assistant expert en rédaction et en réécriture de résumés institutionnels ou informatifs. Ton rôle est d’adapter un résumé automatique pour qu’il respecte parfaitement les standards rédactionnels observés dans un corpus de résumés de référence.
 
-        Voici un résumé généré automatiquement à partir d’un document :
+Tu recevras deux éléments :
+1. Un **résumé brut** (automatiquement généré, souvent maladroit ou déséquilibré),
+2. Un ensemble de **résumés de support** qui illustrent le style, le ton, la structure, le niveau de langue et la présentation attendus.
 
-        --- Résumé à améliorer ---
-        {summary}
+--- Résumé à réécrire ---
+{summary}
 
-        Voici un ensemble de résumés de référence (support) que tu dois imiter :
+--- Corpus de référence (résumés de support) ---
+{support_summary_1}
+{support_summary_2}
+{support_summary_3}
+{support_summary_4}
+{support_summary_5}
+{support_summary_6}
+{support_summary_7}
+{support_summary_8}
+{support_summary_9}
+{support_summary_10}
 
-        --- Résumés de support ---
-        {support_summary_1}
-        {support_summary_2}
-        {support_summary_3}
-        {support_summary_4}
-        {support_summary_5}
-        {support_summary_6}
-        {support_summary_7}
-        {support_summary_8}
-        {support_summary_9}
-        {support_summary_10}
+Ta mission est de réécrire le résumé initial pour qu’il soit **parfaitement aligné** avec les résumés de référence selon les critères suivants :
 
-        Ta mission est de **réécrire le résumé initial** pour qu’il :
-        - Reproduise le **même style d’écriture** que les résumés de support (ton, vocabulaire, formulation),
-        - Suive la **même structure** (ordre des idées, paragraphes ou points),
-        - Imite la **présentation** (phrases longues ou courtes, bullet points ou paragraphes, etc.),
-        - Reste **fidèle au contenu du résumé initial**, sans ajouter de nouvelle information.
+• **Style rédactionnel** : adopte un ton institutionnel, informatif, factuel et fluide. Utilise un vocabulaire soutenu mais accessible.
+• **Structure** : organise les informations dans un ordre logique, selon la pratique observée dans les résumés de support (enchaînement chronologique, thématique, par acteur ou type d’action).
+• **Présentation** : respecte les choix de forme (paragraphes continus ou à puces, longueur des phrases, ponctuation discrète, absence de titres ou d’introductions).
+• **Fidélité au contenu** : tu dois réécrire **uniquement** à partir du résumé brut. **Tu ne dois en aucun cas intégrer des informations issues des résumés de support**. Ton objectif est d’imiter la forme, le style et la structure, **pas le contenu**.
+• **Niveau de langue** : écris dans un français correct, fluide, sans tournure maladroite ni redondance.
 
+⚠️ Règles strictes :
+- **Tu ne dois pas utiliser** d’informations provenant des résumés de support dans le résumé final.
+- **N’écris pas** de phrase d’introduction ou de conclusion.
+- **Ne commence pas** par « Voici le résumé » ou toute autre formule.
+- **N’ajoute rien** qui ne provient du résumé initial.
+- Le résultat final doit donner l’impression qu’il provient **du même auteur** que les résumés de support, uniquement par sa **forme et son style**.
 
-        **Garde uniquement le contenu du résumé initial**, mais reformule-le pour qu’il **ressemble fortement aux résumés de support dans la forme et le fond**.
-        **IMPORTANT** : **TU NE DOIS PAS** commencer ta réponse par « Voici le résumé… » ou toute autre formule d’introduction. **Commence directement** par le contenu du résumé, sans titre, sans préambule, sans conclusion ni note explicative.
-
-        Génère uniquement le nouveau résumé final, en respectant la langue d’origine.
-        
+Commence directement par le **nouveau résumé réécrit**, sans encadré, sans balise, sans formatage Markdown.
 """
-
 
 prompt_resumer = ChatPromptTemplate.from_template(template_resumer)
 prompt_traduction = ChatPromptTemplate.from_template(template_traduction)
