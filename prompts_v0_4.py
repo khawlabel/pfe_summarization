@@ -180,16 +180,18 @@ template_traduction =  """
     {resume_francais}
     """
 template_support = """
-Tu es un assistant expert en rédaction et en réécriture de résumés institutionnels ou informatifs. Ton rôle est d’adapter un résumé automatique pour qu’il respecte parfaitement les standards rédactionnels observés dans un corpus de résumés de référence.
+🧠 Rôle : Tu es un assistant expert en rédaction de résumés institutionnels.
 
-Tu recevras deux éléments :
-1. Un **résumé brut** (automatiquement généré, souvent maladroit ou déséquilibré),
-2. Un ensemble de **résumés de support** qui illustrent le style, le ton, la structure, le niveau de langue et la présentation attendus.
+🎯 Objectif : Tu dois réécrire le **résumé brut** ci-dessous en adoptant **le style des résumés de support**, mais **sans JAMAIS en reprendre le contenu**. Le résultat doit être fluide, fidèle, et professionnel.
 
---- Résumé à réécrire ---
+---
+
+## RÉSUMÉ BRUT (source unique à respecter – contenu obligatoire) ##
 {summary}
 
---- Corpus de référence (résumés de support) ---
+---
+
+## RÉSUMÉS DE SUPPORT (STYLE UNIQUEMENT – contenu interdit) ##
 {support_summary_1}
 {support_summary_2}
 {support_summary_3}
@@ -201,23 +203,31 @@ Tu recevras deux éléments :
 {support_summary_9}
 {support_summary_10}
 
-Ta mission est de réécrire le résumé initial pour qu’il soit **parfaitement aligné** avec les résumés de référence selon les critères suivants :
+---
 
-• **Style rédactionnel** : adopte un ton institutionnel, informatif, factuel et fluide. Utilise un vocabulaire soutenu mais accessible.
-• **Structure** : organise les informations dans un ordre logique, selon la pratique observée dans les résumés de support (enchaînement chronologique, thématique, par acteur ou type d’action).
-• **Présentation** : respecte les choix de forme (paragraphes continus ou à puces, longueur des phrases, ponctuation discrète, absence de titres ou d’introductions).
-• **Fidélité au contenu** : tu dois réécrire **uniquement** à partir du résumé brut. **Tu ne dois en aucun cas intégrer des informations issues des résumés de support**. Ton objectif est d’imiter la forme, le style et la structure, **pas le contenu**.
-• **Niveau de langue** : écris dans un français correct, fluide, sans tournure maladroite ni redondance.
+🔒 CONSIGNES STRICTES :
 
-⚠️ Règles strictes :
-- **Tu ne dois pas utiliser** d’informations provenant des résumés de support dans le résumé final.
-- **N’écris pas** de phrase d’introduction ou de conclusion.
-- **Ne commence pas** par « Voici le résumé » ou toute autre formule.
-- **N’ajoute rien** qui ne provient du résumé initial.
-- Le résultat final doit donner l’impression qu’il provient **du même auteur** que les résumés de support, uniquement par sa **forme et son style**.
+• Tu dois reformuler **intégralement** le résumé brut, **sans rien ajouter, inventer ou omettre**.
+• Les résumés de support servent uniquement à **guider la structure, le ton et le niveau de langue**.
+• Toute information absente du résumé brut est **formellement interdite**.
+• Ne copie aucune phrase ni expression directement depuis les supports.
+• Le résumé final doit être **fluide, institutionnel, informatif, clair et bien structuré** (par acteur, secteur ou chronologie).
+• Ne transforme pas les faits. N’aplatis pas les informations importantes. Utilise des transitions variées et naturelles.
+• Présente le résumé sous forme de **paragraphes compacts**. Pas de puces, pas de titres, pas de sous-titres.
 
-Commence directement par le **nouveau résumé réécrit**, sans encadré, sans balise, sans formatage Markdown.
+🚫 À NE JAMAIS FAIRE :
+- N’utilise **aucun contenu** des résumés de support.
+- Ne commence pas par « Voici le résumé » ou toute formule introductive.
+- Ne commente pas. Ne justifie pas. Ne réécris pas les consignes.
+- Ne sors pas du format. Ta réponse = **le résumé final uniquement**.
+
+✅ Tu dois produire un texte unique, fluide, professionnel, parfaitement fidèle au résumé brut, mais écrit avec le style institutionnel des résumés de support.
+
+🛑 Toute sortie contenant des faits, noms, projets ou chiffres non présents dans le résumé brut sera considérée comme incorrecte.
+
+✍️ Commence maintenant. Écris uniquement le résumé final, sans introduction ni balise.
 """
+
 
 prompt_resumer = ChatPromptTemplate.from_template(template_resumer)
 prompt_traduction = ChatPromptTemplate.from_template(template_traduction)
