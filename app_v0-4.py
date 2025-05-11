@@ -13,7 +13,7 @@ from outils import extract_text
 from qdrant_client.http.models import Filter, FilterSelector
 from langchain.memory import ConversationBufferMemory
 from langchain.agents import initialize_agent, Tool, AgentType
-from prompts_v0_3 import *
+from prompts_v0_4 import *
 from langchain.prompts import MessagesPlaceholder
 
 
@@ -43,6 +43,19 @@ if not client.collection_exists(QDRANT_COLLECTION):
     )
 
 vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION, embeddings=embedding_model)
+
+# Récupérer tous les points (résumés) de la collection
+scroll_result = client.scroll(
+    collection_name=QDRANT_COLLECTION_SUPPORT,
+    limit=15,  # ajuste selon le nombre total de documents
+    with_payload=True
+)
+support_summaries = {}
+for idx, point in enumerate(scroll_result[0]):
+    key = f"support_summary_{idx+1}"
+    support_summaries[key] = point.payload.get("page_content", "")  # "summary" ou le champ correct
+    print(f"{key} : {support_summaries[key]}")
+
 
 # 🔥 Chargement du modèle Groq avec mise en cache
 @st.cache_resource
@@ -283,8 +296,11 @@ if uploaded_files and st.session_state["submit_clicked"]:
                     titre = st.session_state["titles_per_file"]
                     resume = st.session_state["resumes_per_file"][0]
 
+                    #Ajouter le résumé principal
+                    support_summaries["summary"] = resume  # resume doit être défini ailleurs
+
                     resume_support = ""
-                    for chunk in chain_resumer_support.stream({"summary": resume, "language": "francais"}):
+                    for chunk in chain_resumer_support.stream(support_summaries):
                         if chunk:
                             resume_support += chunk
                             summary_fr_placeholder.markdown(
@@ -305,7 +321,9 @@ if uploaded_files and st.session_state["submit_clicked"]:
                         if chunk:
                             resume_sans_support += chunk
                     resume = ""
-                    for chunk in chain_resumer_support.stream({"summary": resume_sans_support, "language": "francais"}):
+                    support_summaries["summary"]=""
+                    support_summaries["summary"] = resume_sans_support  # resume doit être défini ailleurs
+                    for chunk in chain_resumer_support.stream(support_summaries):
                         if chunk:
                             resume += chunk
                             summary_fr_placeholder.markdown(

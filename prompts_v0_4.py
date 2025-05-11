@@ -210,8 +210,10 @@ template_support = """
 
 
         **Garde uniquement le contenu du résumé initial**, mais reformule-le pour qu’il **ressemble fortement aux résumés de support dans la forme et le fond**.
+        **IMPORTANT** : **TU NE DOIS PAS** commencer ta réponse par « Voici le résumé… » ou toute autre formule d’introduction. **Commence directement** par le contenu du résumé, sans titre, sans préambule, sans conclusion ni note explicative.
 
         Génère uniquement le nouveau résumé final, en respectant la langue d’origine.
+        
 """
 
 
