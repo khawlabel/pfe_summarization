@@ -64,6 +64,7 @@ def get_llm(llm_name):
 
 llm = get_llm(LLM_NAME_1)
 llm2=get_llm(LLM_NAME_4)
+
 def clear_uploaded_files():
     """Réinitialisation des fichiers et de la session"""
     client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))

@@ -180,18 +180,16 @@ template_traduction =  """
     {resume_francais}
     """
 template_support = """
-🧠 Rôle : Tu es un assistant expert en rédaction de résumés institutionnels.
+🧠 RÔLE : Expert en rédaction de résumés institutionnels.
 
-🎯 Objectif : Tu dois réécrire le **résumé brut** ci-dessous en adoptant **le style des résumés de support**, mais **sans JAMAIS en reprendre le contenu**. Le résultat doit être fluide, fidèle, et professionnel.
+🎯 MISSION : Reprendre EXCLUSIVEMENT le contenu du RÉSUMÉ BRUT et le reformuler dans le style des RÉSUMÉS DE SUPPORT, **sans ajouter, inventer ou ôter la moindre information**.
 
----
+---  
+## RÉSUMÉ BRUT (source unique – contenu OBLIGATOIRE)  
+{summary}  
 
-## RÉSUMÉ BRUT (source unique à respecter – contenu obligatoire) ##
-{summary}
-
----
-
-## RÉSUMÉS DE SUPPORT (STYLE UNIQUEMENT – contenu interdit) ##
+---  
+## EXEMPLES DE STYLE (contenu STRICTEMENT INTERDIT)  
 {support_summary_1}
 {support_summary_2}
 {support_summary_3}
@@ -203,31 +201,21 @@ template_support = """
 {support_summary_9}
 {support_summary_10}
 
----
+---  
+🔒 CONSIGNES FERMES :  
+1. **ZÉRO INTRODUCTION** : commence *directement* par la reformulation, sans phrase d’accroche (ex. « Voici le résumé… »).
+2. **Interdit** : tout contenu factuel, terme ou chiffre issu des exemples de support.  
+3. **Interdit** : ajouter ou omettre des informations du résumé brut.  
+4. **Style uniquement** : guider ton, structure, niveau de langue, fluidité.  
+5. Reformulation **intégrale** du texte brut, en paragraphes compacts.  
+6. **Pas** de titres, puces, introduc­tions, commentaires, justifications ni rappel des consignes.  
 
-🔒 CONSIGNES STRICTES :
+✅ LIVRABLE : 1 texte unique, fluide et professionnel, fidèle au brut mais calqué stylistiquement sur les supports.
 
-• Tu dois reformuler **intégralement** le résumé brut, **sans rien ajouter, inventer ou omettre**.
-• Les résumés de support servent uniquement à **guider la structure, le ton et le niveau de langue**.
-• Toute information absente du résumé brut est **formellement interdite**.
-• Ne copie aucune phrase ni expression directement depuis les supports.
-• Le résumé final doit être **fluide, institutionnel, informatif, clair et bien structuré** (par acteur, secteur ou chronologie).
-• Ne transforme pas les faits. N’aplatis pas les informations importantes. Utilise des transitions variées et naturelles.
-• Présente le résumé sous forme de **paragraphes compacts**. Pas de puces, pas de titres, pas de sous-titres.
+🛑 Toute violation (invention, omission, copie) sera considérée comme incorrecte.
 
-🚫 À NE JAMAIS FAIRE :
-- N’utilise **aucun contenu** des résumés de support.
-- Ne commence pas par « Voici le résumé » ou toute formule introductive.
-- Ne commente pas. Ne justifie pas. Ne réécris pas les consignes.
-- Ne sors pas du format. Ta réponse = **le résumé final uniquement**.
-
-✅ Tu dois produire un texte unique, fluide, professionnel, parfaitement fidèle au résumé brut, mais écrit avec le style institutionnel des résumés de support.
-
-🛑 Toute sortie contenant des faits, noms, projets ou chiffres non présents dans le résumé brut sera considérée comme incorrecte.
-
-✍️ Commence maintenant. Écris uniquement le résumé final, sans introduction ni balise.
+✍️ FOURNIS **SEULEMENT** le texte final, sans autre élément.   
 """
-
 
 prompt_resumer = ChatPromptTemplate.from_template(template_resumer)
 prompt_traduction = ChatPromptTemplate.from_template(template_traduction)
