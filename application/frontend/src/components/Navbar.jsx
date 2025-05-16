@@ -44,6 +44,18 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
+  const [themeAnchorEl, setThemeAnchorEl] = useState(null);
+  const themeMenuOpen = Boolean(themeAnchorEl);
+
+  const [currentTheme, setCurrentTheme] = useState('light'); // ou 'dark'
+
+  const handleSelectTheme = (mode) => {
+      setCurrentTheme(mode);
+      setThemeAnchorEl(null);
+      // appelle ton système de changement de thème ici
+      // ex : toggleTheme(mode)
+    };
+
   const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -52,11 +64,13 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
     setAnchorEl(null);
   };
 
-  const handleThemeChange = () => {
-    alert('Modifier thème');
-    handleMenuClose();
+  const handleThemeClick = (event) => {
+    setThemeAnchorEl(event.currentTarget);
   };
 
+  const handleThemeMenuClose = () => {
+    setThemeAnchorEl(null);
+  };
   const handleSettings = () => {
     alert('Paramètres');
     handleMenuClose();
@@ -106,22 +120,22 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
         )}
 
         <Typography
-  variant="h6"
-  sx={{
-    flexGrow: 1,
-    fontWeight: 'bold',
-    mt: 0.5,
-    fontFamily: 'Arial, sans-serif',
-    fontSize: '1.6rem',
-    userSelect: 'none',
-    textShadow: '0 2px 6px rgba(27, 153, 139, 0.4)', // légère ombre portée au texte
-    // ou si tu préfères un boxShadow "bloc" autour du texte (un glow) :
-    // boxShadow: '0 4px 10px rgba(27, 153, 139, 0.3)',
-  }}
->
-  <span style={{ color: COLORS.primary }}>Sum</span>
-  <span style={{ color: COLORS.secondry }}>AI</span>
-</Typography>
+            variant="h6"
+            sx={{
+              flexGrow: 1,
+              fontWeight: 'bold',
+              mt: 0.5,
+              fontFamily: 'Arial, sans-serif',
+              fontSize: '1.6rem',
+              userSelect: 'none',
+              textShadow: '0 2px 6px rgba(27, 153, 139, 0.4)', // légère ombre portée au texte
+              // ou si tu préfères un boxShadow "bloc" autour du texte (un glow) :
+              // boxShadow: '0 4px 10px rgba(27, 153, 139, 0.3)',
+            }}
+          >
+            <span style={{ color: COLORS.primary }}>Sum</span>
+            <span style={{ color: COLORS.secondry }}>AI</span>
+          </Typography>
 
         {/* Bouton profil à droite */}
         <Box>
@@ -166,19 +180,18 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
             }}
           >
             <MenuItem
-              onClick={handleThemeChange}
-              sx={{
-                borderRadius: 2,
-                color: COLORS.primary,
-                '&:hover': {
-                  backgroundColor: COLORS.background,
-                },
-              }}
-            >
-              <PaletteIcon sx={{ fontSize: 20, mr: 1 }} />
-              Thème
-            </MenuItem>
-
+                onClick={handleThemeClick}
+                sx={{
+                  borderRadius: 2,
+                  color: COLORS.primary,
+                  '&:hover': {
+                    backgroundColor: COLORS.background,
+                  },
+                }}
+              >
+                <PaletteIcon sx={{ fontSize: 20, mr: 1 }} />
+                Thème
+              </MenuItem>
             <MenuItem
               onClick={handleSettings}
               sx={{
@@ -220,6 +233,43 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
               Déconnexion
             </MenuItem>
           </Menu>
+            <Menu
+                anchorEl={themeAnchorEl}
+                open={themeMenuOpen}
+                onClose={handleThemeMenuClose}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                PaperProps={{
+                  sx: {
+                    backgroundColor: COLORS.paperBackground,
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    minWidth: 180,
+                    p: 1,
+                  },
+                }}
+              >
+                <MenuItem
+                  onClick={() => handleSelectTheme('light')}
+                  selected={currentTheme === 'light'}
+                  sx={{ borderRadius: 2 }}
+                >
+                  🌞 Mode clair
+                </MenuItem>
+                <MenuItem
+                  onClick={() => handleSelectTheme('dark')}
+                  selected={currentTheme === 'dark'}
+                  sx={{ borderRadius: 2 }}
+                >
+                  🌙 Mode sombre
+                </MenuItem>
+              </Menu>
         </Box>
       </Toolbar>
     </AppBar>
