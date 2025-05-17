@@ -10,16 +10,17 @@ import { Alert } from '@mui/material';
 import { Link } from 'react-router-dom';
 
 const COLORS = {
-  primary: '#1B998B',
-  secondry: '#625f63',
-  background: '#f4f6f9',
-  paperBackground: '#ffffff',
-  buttonBackground: '#1B998B',
-  buttonHover: '#166b79',
-  textFieldBorder: '#1B998B',
-  textFieldFocusBorder: '#166b79',
+  primary: '#1B998B',                // On garde la couleur principale
+  secondry: '#cccccc',              // Texte secondaire clair
+  background: '#1c1c1c',            // Fond général sombre
+  paperBackground: '#2a2a2a',       // Fond des papiers sombre
+  buttonBackground: '#1B998B',      // Bouton couleur principale
+  buttonHover: '#166b79',           // Hover du bouton
+  textFieldBorder: '#444',          // Bord sombre
+  textFieldFocusBorder: '#1B998B',  // Focus avec couleur principale
   linkHover: '#E94E1B',
 };
+
 
 const Register = () => {
   const dispatch = useDispatch();
@@ -30,6 +31,41 @@ const Register = () => {
     // Local state pour afficher l'alerte
     const [showError, setShowError] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const textFieldStyle = {
+        backgroundColor: '#2C2C2C', // fond du champ
+        borderRadius: 1,
+        '& .MuiOutlinedInput-root': {
+          '& input': {
+            color: '#ffffff', // texte blanc
+          },
+          '& fieldset': {
+            borderColor: COLORS.textFieldBorder,
+          },
+          '&:hover fieldset': {
+            borderColor: COLORS.buttonHover,
+          },
+          '&.Mui-focused fieldset': {
+            borderColor: COLORS.textFieldFocusBorder,
+            borderWidth: '2px',
+          },
+        },
+        '& .MuiInputLabel-root': {
+          color: '#aaa', // label initial
+          fontSize: '0.9rem',
+          '&.Mui-focused': {
+            color: COLORS.primary, // label quand focus
+          },
+        },
+        '& .MuiFormHelperText-root': {
+          color: '#ff6b6b', // couleur de l'aide/erreur
+        },
+        '& input:-webkit-autofill': {
+        WebkitBoxShadow: '0 0 0 1000px #2C2C2C inset !important',
+        WebkitTextFillColor: '#ffffff !important',
+      },
+      };
+
+
 
 
     useEffect(() => {
@@ -94,7 +130,7 @@ const Register = () => {
           flexDirection: 'row',
           borderRadius: 4,
           backgroundColor: COLORS.paperBackground,
-          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)', // plus prononcé
           overflow: 'hidden',
           width: {
             xs: '90%',
@@ -167,6 +203,7 @@ const Register = () => {
                 name="email"
                 label="Email"
                 type="email"
+                autoComplete="off"
                 value={formik.values.email}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -182,6 +219,7 @@ const Register = () => {
                 name="password"
                 label="Mot de passe"
                 type="password"
+                autoComplete="new-password"
                 value={formik.values.password}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -196,7 +234,7 @@ const Register = () => {
                 variant="contained"
                 sx={{
                   mt: 2,
-                  mb: 2,
+                  mb: 3,
                   backgroundColor: COLORS.buttonBackground,
                   fontSize: '0.875rem',
                   fontWeight: 'bold',
