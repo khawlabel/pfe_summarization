@@ -7,7 +7,9 @@ import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import ReactMarkdown from 'react-markdown';
 import AI from '../images/ai.png';
+import axios from "axios";
 
+import { useDispatch, useSelector } from 'react-redux';
 
 const COLORS = {
   primary: '#1B998B',
@@ -23,11 +25,61 @@ const COLORS = {
 };
 
 const MainPage = () => {
+  const dispatch = useDispatch();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isFrenchReady, setIsFrenchReady] = useState(false);
   const [isArabicReady, setIsArabicReady] = useState(false);
   const [messages, setMessages] = useState([]);
   const [streamingIndex, setStreamingIndex] = useState(null);
+  const [frenchSummary, setFrenchSummary] = useState('');
+  const [frenchTitle, setFrenchTitle] = useState('');
+  const [arabicSummary, setArabicSummary] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+
+// helper pour streamer un endpoint text/plain ou event-stream
+const streamEndpoint = async (url, onChunk) => {
+  const res = await fetch(url, { method: 'GET' });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let done = false;
+  while (!done) {
+    const { value, done: d } = await reader.read();
+    done = d;
+    if (value) {
+      const chunk = decoder.decode(value, { stream: true });
+      onChunk(chunk);
+    }
+  }
+};
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      setIsGenerating(true);
+      setFrenchTitle('');
+      setFrenchSummary('');
+
+      try {
+        // 1) streamer le titre
+        await streamEndpoint('http://127.0.0.1:8000/generate_titre_fr', chunk => {
+          setFrenchTitle(prev => prev + chunk);
+        });
+
+        // 2) une fois le titre complet, ajouter un saut de ligne puis streamer le résumé
+        setFrenchSummary(prev => prev + '\n'); // séparer visuellement
+        await streamEndpoint('http://127.0.0.1:8000/generate_summary_fr', chunk => {
+          setFrenchSummary(prev => prev + chunk);
+        });
+
+      } catch (err) {
+        console.error('Erreur de streaming :', err);
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+
+    fetchAll();
+  }, []); // ou [filesRedux] si tu veux relancer à chaque changement de fichiers
 
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -181,8 +233,7 @@ const MainPage = () => {
             ),
           }}
         >
-        {`**Titre :** Ministère de l'Énergie et des Mines : Plus de 1,5 million d'Algériens sont désormais connectés à Internet par fibre optique.\n\n**Résumé :** Le ministère des Télécommunications a annoncé une augmentation qualitative de la couverture des réseaux de télécommunications en Algérie, avec plus de 1,5 million de foyers équipés de fibres optiques et 5,8 millions de foyers connectés à internet fixe, selon un communiqué officiel. Cette "qualité sautée" dans le domaine des réseaux de télécommunications est réalisée dans le cadre de la mise en œuvre des directives du Président de la République, Abdelmadjid Tebboune, concernant l'amélioration de la couverture des réseaux de télécommunications.
-        `}
+         {`**Titre :**\n${frenchTitle.trim()}\n\n**Résumé :**\n${frenchSummary.trim()}`}
         </ReactMarkdown>
 
         </Box>

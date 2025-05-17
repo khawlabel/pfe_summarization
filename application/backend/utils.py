@@ -41,43 +41,4 @@ def load_llm():
 def load_llm2():
     return ChatGroq(groq_api_key=GROQ_API_KEY_3, model_name=LLM_NAME_4)
 
-# Mémoire
-def get_memory():
-    return ConversationBufferMemory(
-        memory_key="chat_history",
-        return_messages=True
-    )
-
-# Agent avec outils
-def init_agent(llm, llm2, memory, vectorstore):
-    def document_retrieval_tool(query: str) -> str:
-        context = "\n\n".join(st.session_state.get("retrieved_contexts", []))
-        return f"Contexte :\n{context}\n\nQuestion : {query}"
-
-    def outil_consulter_memoire(_):
-        messages = memory.chat_memory.messages
-        if not messages:
-            return "La mémoire est actuellement vide."
-        historique = []
-        for msg in messages:
-            role = "👤 Utilisateur" if msg.type == "human" else "🤖 Assistant"
-            historique.append(f"{role} : {msg.content}")
-        return "\n\n".join(historique)
-
-    tools = [
-        Tool(name="Document Retrieval", func=document_retrieval_tool,
-             description="Récupère les infos pertinentes à partir des documents."),
-        Tool(name="Consulter la mémoire", func=outil_consulter_memoire,
-             description="Consulte l’historique de la conversation.")
-    ]
-
-    return initialize_agent(
-        tools=tools,
-        llm=llm2,
-        agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-        verbose=True,
-        handle_parsing_errors=True,
-        memory=memory
-    )
-
 

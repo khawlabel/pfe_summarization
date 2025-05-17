@@ -1,5 +1,17 @@
-import React, { useState } from 'react'; 
-import { Link, TextField, Button, Box, Typography, Paper } from '@mui/material';
+import React, { useEffect,useState } from 'react';
+import {
+  TextField,
+  Button,
+  Box,
+  Typography,
+  Paper
+} from '@mui/material';
+import { useFormik } from 'formik';
+import { useDispatch, useSelector } from 'react-redux';
+import { login,reset } from '../features/Auth/authSlice';
+import { Link, useNavigate } from 'react-router-dom';
+import * as yup from 'yup';
+import { Alert } from '@mui/material';
 
 const COLORS = {
   primary: '#1B998B  ',
@@ -14,15 +26,51 @@ const COLORS = {
 };
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const auth = useSelector((state) => state.auth);
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    // Suppression de la logique d'appel API
-    console.log('Form submitted:', { email, password });
-  };
+
+  // Local state pour afficher l'alerte
+  const [showError, setShowError] = useState(false);
+    useEffect(() => {
+  formik.resetForm();
+  dispatch(reset());  // reset état auth aussi
+  }, [dispatch]);
+
+
+  useEffect(() => {
+    if (auth.isError) {
+      setShowError(true);
+    } else {
+      setShowError(false);
+    }
+  }, [auth.isError]);
+
+  useEffect(() => {
+    if (auth.isSuccess) {
+      navigate('/uploadfiles');
+    }
+  }, [auth.isSuccess, navigate]);
+
+  const schema = yup.object().shape({
+    email: yup.string().email("L’adresse e-mail doit être valide").required("Ce champ est obligatoire"),
+    password: yup.string().required("Ce champ est obligatoire"),
+  });
+
+
+  const formik = useFormik({
+    initialValues: {
+      email:'',
+      password: '',
+    },
+    validationSchema: schema,
+    onSubmit: (values) => {
+      dispatch(login(values));
+      formik.resetForm();
+    },
+  });
+
 
   return (
     <Box
@@ -64,7 +112,15 @@ const Login = () => {
             >
               Connexion
             </Typography>
-            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+
+                        {/* Affichage de l'alerte d'erreur */}
+            {showError && (
+              <Alert severity="error" sx={{ mb: 2, width: '93%' }}>
+                {auth.message}
+              </Alert>
+            )}
+            
+            <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 1 }}>
               <TextField
                 margin="dense"
                 required
@@ -75,8 +131,10 @@ const Login = () => {
                 type="email"
                 autoComplete="email"
                 autoFocus
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formik.values.email}
+                onChange={formik.handleChange}
+                error={formik.touched.email && Boolean(formik.errors.email)}
+                helperText={formik.touched.email && formik.errors.email}
                 sx={{
                   backgroundColor: '#fff',
                   borderRadius: 1,
@@ -99,8 +157,10 @@ const Login = () => {
                 type="password"
                 id="password"
                 autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={formik.values.password}
+                onChange={formik.handleChange}
+                error={formik.touched.password && Boolean(formik.errors.password)}
+                helperText={formik.touched.password && formik.errors.password}
                 sx={{
                   backgroundColor: '#fff',
                   borderRadius: 1,
@@ -114,11 +174,6 @@ const Login = () => {
                     '&.Mui-focused': { color: '#166b79' }, },
                 }}
               />
-              {error && (
-                <Typography color="error" sx={{ mb: 1, fontSize: '0.875rem' }}>
-                  {error}
-                </Typography>
-              )}
               <Button
                 type="submit"
                 fullWidth
@@ -141,7 +196,7 @@ const Login = () => {
           <Typography variant="body2" align="center" sx={{color: COLORS.secondry,  fontWeight: 'normal', fontFamily: 'lato' }}>
             Voulez n'avez pas de compte ?{' '}
             <Link
-                          to="/"
+                          to="/register"
                           style={{ color: COLORS.primary, fontWeight: 'bold', textDecoration: 'none', fontFamily: 'lato' }}
                           onMouseOver={(e) => (e.target.style.textDecoration = 'underline')}
                           onMouseOut={(e) => (e.target.style.textDecoration = 'none')}

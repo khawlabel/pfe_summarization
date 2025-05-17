@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect} from 'react';
 import { Box, Typography, Paper, Button, IconButton } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
@@ -6,7 +6,11 @@ import CloseIcon from '@mui/icons-material/Close';  // Icone pour retirer un fic
 import ChatBotGif from '../images/Chat_bot.gif';
 import Arrow from '../images/arrow (3).png'; // Import de l'image de la flèche
 import BackgroundDescription from '../images/shape9.png';
-
+import { uploadfiles,setFiles } from '../features/files/filesSlice';
+import { Alert } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import CircularProgress from '@mui/material/CircularProgress';
 
 const COLORS = {
   primary: '#1B998B',
@@ -22,26 +26,66 @@ const COLORS = {
 
 
 const UploadFiles = () => {
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const upload = useSelector((state) => state.files);
+  const { isLoading, isError, isSuccess, message } = upload;
+
+
+  
+
   const [files, setFiles] = useState([]);
+  const [rejectedFiles, setRejectedFiles] = useState([]);
+
+      useEffect(() => {
+      if (isSuccess) {
+        // Redirection après 3 secondes
+        setTimeout(() => {
+          navigate('/mainpage');
+        }, 3000);
+      }
+    }, [isSuccess, navigate, files]);
+
   
   const { getRootProps, getInputProps } = useDropzone({
-    multiple: true, // Autorise la sélection de plusieurs fichiers
-    accept: ['application/pdf', 'audio/*', 'video/*'], // Accepte les fichiers PDF, audio et vidéo
+    multiple: true,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'audio/*': ['.mp3', '.wav', '.ogg', '.flac', '.m4a'],
+      'video/*': ['.mp4', '.avi', '.mov', '.mkv'],
+    },
     onDrop: (acceptedFiles) => {
-      setFiles((prevFiles) => [...prevFiles, ...acceptedFiles]); // Ajoute les fichiers sélectionnés
-    }
+      setFiles((prevFiles) => [...prevFiles, ...acceptedFiles]);
+      setRejectedFiles([]); // reset les erreurs précédentes
+    },
+    onDropRejected: (fileRejections) => {
+      setRejectedFiles(fileRejections.map(rej => rej.file.name));
+    },
   });
+
 
   // Fonction pour retirer un fichier de la liste
   const removeFile = (file) => {
     setFiles((prevFiles) => prevFiles.filter((f) => f.name !== file.name));
   };
 
-  // Fonction de soumission des fichiers
   const handleSubmit = () => {
-    alert('Fichiers soumis avec succès!');
-    // Vous pouvez ajouter ici la logique pour envoyer les fichiers au backend ou autre traitement
+
+    if (files.length === 0) return;
+
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('file', file);  // clé 'files' selon ton API backend
+    });
+
+    files.forEach((file) => {
+      formData.append('uploaded_files', file);  // clé 'files' selon ton API backend
+    });
+
+    dispatch(uploadfiles(formData));
   };
+
 
   return (
   <Box
@@ -238,11 +282,26 @@ const UploadFiles = () => {
                 </Box>
               ))}
 
-              {/* Bouton Soumettre */}
-              <Button
-                variant="contained"
-                disabled={files.length === 0}
-               sx={{
+
+
+              {isLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+               <CircularProgress size={32} sx={{ color: '#0d5b53' }} />
+
+                </Box>
+              ) : isSuccess ? (
+                <Alert severity="success" sx={{ mt: 3 }}>
+                  Fichiers uploadés avec succès !
+                </Alert>
+              ) : isError ? (
+                <Alert severity="error" sx={{ mt: 3 }}>
+                  Erreur lors de l’upload : {message}
+                </Alert>
+              ) : (
+                <Button
+                  variant="contained"
+                  disabled={files.length === 0}
+                  sx={{
                     mt: 3,
                     background: 'linear-gradient(to right, #1B998B, #14766d)',
                     color: '#fff',
@@ -258,14 +317,28 @@ const UploadFiles = () => {
                       background: 'linear-gradient(to right, #14766d, #0d5b53)',
                     },
                   }}
+                  onClick={handleSubmit}
+                >
+                  Soumettre
+                </Button>
+              )}
 
-                onClick={handleSubmit}
-              >
-                Soumettre
-              </Button>
             </Box>
           )}
         </Paper>
+           {/* 🔻 ALERTE fichiers rejetés ici */}
+        {rejectedFiles.length > 0 && (
+          <Box sx={{ mt: 2, width: '100%', maxWidth: 600 }}>
+            <Alert severity="error">
+              Les fichiers suivants ne sont pas acceptés :
+              <ul style={{ margin: 0, paddingLeft: '1.2em' }}>
+                {rejectedFiles.map((fileName, index) => (
+                  <li key={index}>{fileName}</li>
+                ))}
+              </ul>
+            </Alert>
+          </Box>
+        )}
       </Box>
     </Box>
   </Box>

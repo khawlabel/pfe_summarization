@@ -1,8 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+
 import { Link as RouterLink } from 'react-router-dom';
 import { Box, Typography, Paper, Button } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import checkedIcon from '../images/checked.png';
+import { useLocation } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { verifyCompte }  from '../features/Auth/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 const COLORS = {
   primary: '#1B998B',
@@ -14,6 +19,19 @@ const COLORS = {
 };
 
 const Verification = () => {
+
+    const location = useLocation();
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+
+    const token = location.pathname.split('/')[2];
+  
+    useEffect(() => {
+      // Dispatch l'action de vérification du compte avec le token
+      dispatch(verifyCompte(token));
+     
+    }, [dispatch, token]);
+
   return (
     <Box
       sx={{
@@ -69,8 +87,9 @@ const Verification = () => {
         </Typography>
 
         <Button
+          component={RouterLink}  // <-- ici
           variant="contained"
-          to="/"
+          to="/login"
           sx={{
             mt: 2,
             backgroundColor: COLORS.buttonBackground,

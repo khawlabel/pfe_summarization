@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from datetime import datetime, timedelta
-
+from typing import List
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
@@ -16,10 +16,18 @@ from utils import *
 import uuid
 import asyncio
 from outils import *
+from fastapi.responses import StreamingResponse
+from langchain.memory import ConversationBufferMemory
+from prompts_v0_2 import prompt_chat
+from qdrant_client.http.models import Filter, FilterSelector
+from fastapi.middleware.cors import CORSMiddleware
+
+
 # Charger les variables d'environnement
 load_dotenv()
 
 # ================= Configuration =================
+
 SECRET_KEY ="mysecretkey"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -27,9 +35,21 @@ DB_PATH ="users.db"
 
 app = FastAPI()
 
+origins = [
+    "http://localhost:3000",  # ou l'URL de ton frontend
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,            # liste précise d'origines
+    allow_credentials=True,           # autoriser les cookies et authentification
+    allow_methods=["*"],              # méthodes HTTP autorisées
+    allow_headers=["*"],              # headers autorisés
+)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 serializer = URLSafeTimedSerializer(SECRET_KEY)
+
 # =================== Modèles =====================
 class RegisterRequest(BaseModel):
     firstname: str
@@ -41,6 +61,11 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+class ChatRequest(BaseModel):
+    user_id: str
+    user_input: str
+
 
 # =============== Fonctions utilitaires ===============
 def get_db():
@@ -80,16 +105,14 @@ def validate_password(password: str):
         raise HTTPException(status_code=400, detail="Mot de passe : min. un caractère spécial.")
 
 
-# ==================== Routes =======================
 def send_verification_email(email: str, token: str):
     import uuid
     sender_email = "belgacemkhawla32@gmail.com"
     receiver_email = email
     password = "pqcv fuom idxh oaog"
-
+    
     # IMPORTANT : Utiliser un lien valide
-    verification_link = f"https://ton-domaine.com/verify-email/{token}"
-
+    verification_link = f"http://localhost:3000/verify-email/{token}"
     message = MIMEMultipart("alternative")
     message["Subject"] = "Vérification de votre adresse email"
     message["From"] = f"Support Plateforme <{sender_email}>"
@@ -117,7 +140,7 @@ L'équipe Support
   <body>
     <p>Bonjour,<br><br>
        Merci pour votre inscription sur notre plateforme.<br><br>
-       <a href="{verification_link}" style="padding:10px 20px;background-color:#1a73e8;color:white;text-decoration:none;border-radius:5px;">Cliquez ici pour vérifier votre adresse email</a><br><br>
+       <a href="{verification_link}" style="padding:10px 20px;background-color:#0d5b53;color:white;text-decoration:none;border-radius:5px;">Cliquez ici pour vérifier votre adresse email</a><br><br>
        Ce lien est valable pendant 1 heure.<br><br>
        Cordialement,<br>
        <i>L'équipe Support</i>
@@ -140,60 +163,273 @@ L'équipe Support
         print(f"Erreur lors de l'envoi de l'email: {e}")
         raise HTTPException(status_code=500, detail="Échec de l'envoi de l'email.")
 
+def retrieve_context_with_metadata_file(query, file_name=None,length=1):
+    """Récupère le contexte pertinent pour la requête, éventuellement filtré par fichier"""
+    retriever = app.state.vectorstore.as_retriever(search_kwargs={"k": length})
+    retrieved_docs = retriever.invoke(query)
+
+    if file_name:
+        # Ne garder que les documents liés à ce fichier
+        retrieved_docs = [doc for doc in retrieved_docs if doc.metadata.get("file_name") == file_name]
+
+    formatted_context = "\n\n".join(
+        [
+            f"📂 Fichier: {doc.metadata.get('file_name', 'Inconnu')}\n"
+            f"📄 Type: {doc.metadata.get('file_type', 'Inconnu')}\n"
+            f"🔹 Contenu:\n{doc.page_content}"
+            for doc in retrieved_docs
+        ]
+    )
+
+    return formatted_context    
+
+def stream_responses(chain,queries):
+    for query in queries:
+        for chunk in chain.stream(query):
+            yield chunk
+
 # ==================== Route d'enregistrement ====================
 
 @app.on_event("startup")
 async def start():
-    client, embedding_model, vectorstore = await asyncio.to_thread(init_qdrant)
+    client, embedding_model, vectorstore = init_qdrant()
+    
+            # Récupérer tous les points (résumés) de la collection
+    scroll_result = client.scroll(
+        collection_name=QDRANT_COLLECTION_SUPPORT,
+        limit=15,  # ajuste selon le nombre total de documents
+        with_payload=True
+    )
+    support_summaries = {}
+    for idx, point in enumerate(scroll_result[0]):
+        key = f"support_summary_{idx+1}"
+        support_summaries[key] = point.payload.get("page_content", "")  # "summary" ou le champ correct
+        print(f"{key} : {support_summaries[key]}")
+    app.state.support_summaries=support_summaries
+
+
+    llm = load_llm()
+    llm2=load_llm2()
+
+    # 📌 Chaînes de traitement
+
+    chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm | StrOutputParser())
+    chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
+    chain_traduction  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction | llm2| StrOutputParser())
+    chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm | StrOutputParser())
+    chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm | StrOutputParser())
+    chain_resumer_support=({"summary": itemgetter("summary"),
+            "support_summary_1":itemgetter("support_summary_1"),      
+            "support_summary_2":itemgetter("support_summary_2"),   
+            "support_summary_3":itemgetter("support_summary_3"),    } | prompt_support | llm | StrOutputParser())
+    
+
     app.state.vectorstore = vectorstore
     app.state.embedding_model = embedding_model 
     app.state.client = client 
     app.state.extract_text_func = extract_text 
-    
+    app.state.chain_resumer = chain_resumer 
+    app.state.chain_traduction = chain_traduction 
+    app.state.chain_resumer_general = chain_resumer_general 
+    app.state.chain_titre_general = chain_titre_general 
+    app.state.chain_resumer_support = chain_resumer_support 
+    app.state.retrieved_contexts = []
+    app.state.resumes_per_file = []
+    app.state.summary_text = {"fr": "", "ar": ""}
+    app.state.titles_per_file = ""
+    app.state.chain_chat=chain_chat
+    app.state.user_histories = {}  # <- Ajout ici
+    app.state.upload_files={}
+
+
 @app.post("/upload_and_store_file")
 async def upload_and_store_file(
-    file: UploadFile = File(...),
+    file: List[UploadFile] = File(...),
     user_id: Optional[str] = Form(None)
 ):
-    print(file.filename)
-    suffix = os.path.splitext(file.filename)[1]
-    file_type = suffix.lstrip(".")
+    print(file)
+    app.state.upload_files=file
+    if user_id is None:
+        user_id = uuid.uuid4().hex
 
-    file_bytes = await file.read()  # ⚠️ important : await
+    if not hasattr(app.state, "uploaded_files_metadata"):
+        app.state.uploaded_files_metadata = []
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-        temp_file.write(file_bytes)
-        temp_file_path = temp_file.name
+    results = []
 
-    try:
-        # Extraction avec la fonction stockée au démarrage
-        text = app.state.extract_text_func(temp_file_path)
+    for f in file:
+        try:
+            print(f.filename)
+            suffix = os.path.splitext(f.filename)[1]
+            file_type = suffix.lstrip(".")
+            file_name = f.filename
 
-        if not text:
-            return JSONResponse(content={"error": "❌ Aucun texte extrait."}, status_code=400)
+            file_bytes = await f.read()
 
-        # Ajouter au vectorstore
-        app.state.vectorstore.add_texts(
-            [text],
-            metadatas=[{"file_name": file.filename, "file_type": file_type}]
-        )
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+                temp_file.write(file_bytes)
+                temp_file_path = temp_file.name
 
-        if user_id is None:
-            user_id = uuid.uuid4().hex
+            text = app.state.extract_text_func(temp_file_path)
 
-        return JSONResponse(content={
-            "message": f"✅ Fichier '{file.filename}' traité et stocké.",
-            "user_id": user_id
+            if not text:
+                results.append({"file_name": file_name, "error": "❌ Aucun texte extrait."})
+                continue
+
+            app.state.vectorstore.add_texts(
+                [text],
+                metadatas=[{"file_name": file_name, "file_type": file_type}]
+            )
+
+            app.state.uploaded_files_metadata.append({
+                "file_name": file_name,
+                "file_type": file_type
+            })
+
+            results.append({"file_name": file_name, "message": "✅ Fichier traité avec succès."})
+
+        except ValueError as e:
+            results.append({"file_name": f.filename, "error": f"⚠ Erreur d'extraction : {str(e)}"})
+
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Erreur serveur : {error_details}")
+            results.append({
+                "file_name": f.filename,
+                "error": f"❌ Erreur serveur : {str(e)}",
+                "details": error_details
+            })
+
+        finally:
+            if os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
+
+    # ✅ Un seul return ici, après traitement de tous les fichiers
+    return JSONResponse(content={
+        "user_id": user_id,
+        "results": results
+    })
+
+@app.post("/chat")
+async def chat_stream(data: ChatRequest):
+    user_id = data.user_id
+    user_input = data.user_input
+
+    # Initialiser historique utilisateur s'il n'existe pas
+    if user_id not in app.state.user_histories:
+        app.state.user_histories[user_id] = []
+
+    # Ajouter la question dans l'historique
+    app.state.user_histories[user_id].append({"role": "user", "content": user_input})
+
+    # Recréer l'historique du chat pour le prompt
+    chat_history_text = "\n".join([
+        f"{msg['role'].capitalize()}: {msg['content']}"
+        for msg in app.state.user_histories[user_id]
+        if msg["role"] != "system"
+    ])
+
+    context = app.state.retrieved_contexts
+
+    # Fonction de génération en streaming
+    def generate_stream():
+        full_response = ""
+        for chunk in app.state.chain_chat.stream({
+            "context": context,
+            "question": f"{chat_history_text}\nUser: {user_input}\nAssistant:"
+        }):
+            if chunk:
+                full_response += chunk
+                yield f"data: {chunk}\n\n"
+        # Enregistrement de la réponse complète dans l'historique
+        app.state.user_histories[user_id].append({"role": "assistant", "content": full_response})
+        yield "data: [END]\n\n"
+
+    return StreamingResponse(generate_stream(), media_type="text/event-stream")
+
+@app.post("/reset")
+async def reset_app_state():
+    # Suppression de tous les points dans Qdrant
+    app.state.client.delete(
+        collection_name=QDRANT_COLLECTION,
+        points_selector=FilterSelector(filter=Filter(must=[]))
+    )
+
+    # Réinitialisation des états internes
+    app.state.user_histories = {}
+    app.state.retrieved_contexts = []
+    app.state.resumes_per_file = []
+    app.state.titles_per_file = ""
+    app.state.summary_text = {"fr": "", "ar": ""}
+    
+    return {"status": "reset complete"}
+
+@app.get("/generate_summary_fr")
+async def generate_summary_stream():
+    uploaded_files=app.state.upload_files
+    if not uploaded_files:
+        return JSONResponse(status_code=400, content={"error": "Aucun fichier reçu."})
+
+    query = "Fais un résumé clair et structuré des informations disponibles."
+    app.state.retrieved_contexts.clear()
+    app.state.resumes_per_file.clear()
+
+    # Extraction et résumé fichier par fichier
+    for file in uploaded_files:
+        context = retrieve_context_with_metadata_file(query, file_name=file.filename, length=len(uploaded_files))
+        app.state.retrieved_contexts.append(context)
+
+        resume_piece = ""
+        resume_piece=app.state.chain_resumer.invoke({"context": context, "language": "francais"})
+            
+        app.state.resumes_per_file.append(resume_piece)
+
+    all_resumes = "\n\n".join(app.state.resumes_per_file)
+
+    # Résumé (fusion ou direct)
+    if len(uploaded_files) == 1:
+        resume = app.state.resumes_per_file[0]
+    else:
+        resume = app.state.chain_resumer_general.invoke({
+            "context": all_resumes,
+            "language": "francais"
         })
 
-    except ValueError as e:
-        return JSONResponse(content={"error": f"⚠ Erreur d'extraction : {str(e)}"}, status_code=400)
+    app.state.support_summaries["summary"] = resume
 
-    except Exception as e:
-        return JSONResponse(content={"error": f"❌ Erreur serveur : {str(e)}"}, status_code=500)
+    def full_stream():
+        for chunk in app.state.chain_resumer_support.stream(app.state.support_summaries):
+            yield chunk 
+    return StreamingResponse(full_stream(), media_type="text/event-stream")
 
-    finally:
-        os.remove(temp_file_path)
+@app.get("/generate_titre_fr")
+async def generate_titre_stream():
+    all_resumes = "\n\n".join(app.state.resumes_per_file)
+    def full_stream():
+        for chunk in app.state.chain_titre_general.stream({"context": all_resumes, "language": "francais"}):
+            yield chunk 
+    return StreamingResponse(full_stream(), media_type="text/event-stream")
+
+
+@app.get("/generate_t_fr")
+async def generate_titre_stream():
+    all_resumes = "\n\n".join(app.state.resumes_per_file)
+    def full_stream():
+        for chunk in app.state.chain_titre_general.stream({"context": all_resumes, "language": "francais"}):
+            yield chunk 
+    return StreamingResponse(full_stream(), media_type="text/event-stream")
+
+
+@app.get("/generate_titre_fr")
+async def generate_titre_stream():
+    all_resumes = "\n\n".join(app.state.resumes_per_file)
+    def full_stream():
+        for chunk in app.state.chain_titre_general.stream({"context": all_resumes, "language": "francais"}):
+            yield chunk 
+    return StreamingResponse(full_stream(), media_type="text/event-stream")
+
+
 
 @app.post("/register")
 def register(request: RegisterRequest):
@@ -223,7 +459,8 @@ def register(request: RegisterRequest):
     send_verification_email(request.email, token)
 
     conn.close()
-    return {"message": "Utilisateur créé. Vérifiez votre boîte mail pour activer votre compte."}
+    return {"message": "Utilisateur créé. Vérifiez votre boîte mail pour activer votre compte.",
+            "token":token}
 
 # ==================== Route de vérification ====================
 
@@ -242,8 +479,10 @@ def verify_email(token: str):
 
     return {"message": "Email vérifié avec succès."}
 
+
 @app.post("/login")
 def login(request: LoginRequest):
+    print(request)
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
