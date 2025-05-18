@@ -15,7 +15,7 @@ import './App.css';
 import {checkUserRole} from './routes/Route';
 
 function App() {
-   const [mode, setMode] = useState('light');
+   const [mode, setMode] = useState('dark');
   
     const theme = useMemo(() => createTheme({
       palette: {
@@ -76,7 +76,7 @@ function App() {
                   localStorage.getItem("uploadDone") === "true" ? (
                     <Navigate to="/mainpage" />
                   ) : (
-                    <UploadFiles />
+                    <UploadFiles onThemeChange={toggleTheme} />
                   )
                 ) : (
                   <Navigate to="/login" />
@@ -89,7 +89,7 @@ function App() {
               element={
                 localStorage.getItem("user") ? (
                   localStorage.getItem("uploadDone") === "true" ? (
-                    <MainPage />
+                    <MainPage onThemeChange={toggleTheme} />
                   ) : (
                     <Navigate to="/uploadfiles" />
                   )

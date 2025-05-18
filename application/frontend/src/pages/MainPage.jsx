@@ -197,7 +197,7 @@ const handleSend = (msg) => {
           pr: { xs: 7, md: 13, lg: 22 },
           pl: { xs: 7, md: 13, lg: 22 },
           pb: 20,
-          pt: 10,
+          pt: 13,
           maxWidth: '100%',
           boxSizing: 'border-box',
           transition: 'all 0.3s ease',
@@ -243,7 +243,7 @@ const handleSend = (msg) => {
                   ml: 0.5,
                   verticalAlign: 'middle',
                   position: 'relative',
-                  top: '-8px',
+                  top: '-8.3px',
                 }}
               />
             </Box>
