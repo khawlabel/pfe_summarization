@@ -115,7 +115,7 @@ const Register = () => {
   return (
     <Box
       sx={{
-        height: '90vh',
+        height: '100vh',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
