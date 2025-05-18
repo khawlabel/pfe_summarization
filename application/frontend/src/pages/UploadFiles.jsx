@@ -14,9 +14,14 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import CircularProgress from '@mui/material/CircularProgress';
 import Navbar from '../components/NavbarUploadFiles';
+import { ThemeContext } from '../ThemeContext'; // ajuste le chemin
+import { useContext } from 'react';
 
 
-const UploadFiles = ({ onThemeChange }) => {
+
+const UploadFiles = () => {
+  const { mode, toggleTheme } = useContext(ThemeContext);
+
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const getColors = (isDarkMode) => ({
@@ -103,7 +108,7 @@ const UploadFiles = ({ onThemeChange }) => {
       py: 10,
     }}
   >
-       <Navbar onThemeChange={onThemeChange} />
+       <Navbar />
     
     <Box
       sx={{

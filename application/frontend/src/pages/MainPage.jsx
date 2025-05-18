@@ -7,9 +7,14 @@ import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import ReactMarkdown from 'react-markdown';
 import AI from '../images/ai.png';
+import { ThemeContext } from '../ThemeContext'; // ajuste le chemin
+import { useContext } from 'react';
 
 
-const MainPage = ({ onThemeChange }) => {
+
+const MainPage = () => {
+  const { mode, toggleTheme } = useContext(ThemeContext);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isFrenchReady, setIsFrenchReady] = useState(false);
   const [isArabicReady, setIsArabicReady] = useState(false);
@@ -189,7 +194,7 @@ const handleSend = (msg) => {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: isDarkMode ? theme.palette.background.default : '#f0f4f8' }}>
-      <Navbar onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen} onThemeChange={onThemeChange} />
+      <Navbar onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen}  />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <Box

@@ -19,7 +19,8 @@ import PaletteIcon from '@mui/icons-material/Palette';
 import React, { useEffect,useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-
+import  { useContext } from 'react';
+import { ThemeContext } from '../ThemeContext';
 
 const CustomMenuIcon = (props) => (
   <SvgIcon {...props} viewBox="0 0 100 80" width="24" height="24">
@@ -29,7 +30,9 @@ const CustomMenuIcon = (props) => (
   </SvgIcon>
 );
 
-const Navbar = ({ onMenuClick, sidebarOpen, onThemeChange }) => {
+const Navbar = ({ onMenuClick, sidebarOpen }) => {
+  const { mode, toggleTheme } = useContext(ThemeContext);
+
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -43,11 +46,7 @@ const Navbar = ({ onMenuClick, sidebarOpen, onThemeChange }) => {
   const navigate = useNavigate();
   const auth = useSelector((state) => state.auth);
 
-  const handleSelectTheme = (mode) => {
-    setCurrentTheme(mode);
-    onThemeChange(mode);
-    setThemeAnchorEl(null);
-  };
+ 
 
   const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -206,14 +205,14 @@ const Navbar = ({ onMenuClick, sidebarOpen, onThemeChange }) => {
             }}
           >
             <MenuItem
-              onClick={() => handleSelectTheme('light')}
+              onClick={toggleTheme}
               selected={currentTheme === 'light'}
               sx={{ borderRadius: 2 }}
             >
               🌞 Mode clair
             </MenuItem>
             <MenuItem
-              onClick={() => handleSelectTheme('dark')}
+             onClick={toggleTheme}
               selected={currentTheme === 'dark'}
               sx={{ borderRadius: 2 }}
             >
