@@ -8,20 +8,8 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import ReactMarkdown from 'react-markdown';
 import AI from '../images/ai.png';
 
-const COLORS = {
-  primary: '#1B998B',
-  secondry: '#f67e7d',
-  gray: '#495057',
-  background: '#f0f4f8',
-  paperBackground: '#f9f9f9',
-  buttonBackground: '#1B998B',
-  buttonHover: '#14766d',
-  textFieldBorder: '#d0eae7',
-  textFieldFocusBorder: '#1B998B',
-  fileItemBackground: '#f4f6f9',
-};
 
-const MainPage = () => {
+const MainPage = ({ onThemeChange }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isFrenchReady, setIsFrenchReady] = useState(false);
   const [isArabicReady, setIsArabicReady] = useState(false);
@@ -94,6 +82,8 @@ const streamEndpoint = async (url, onChunk) => {
 
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isDarkMode = theme.palette.mode === 'dark';
+  
 
   // Message d'accueil automatique
   useEffect(() => {
@@ -198,8 +188,8 @@ const handleSend = (msg) => {
 
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: COLORS.background }}>
-      <Navbar onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen} />
+    <Box sx={{ minHeight: '100vh', backgroundColor: isDarkMode ? theme.palette.background.default : '#f0f4f8' }}>
+      <Navbar onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen} onThemeChange={onThemeChange} />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <Box
@@ -219,7 +209,7 @@ const handleSend = (msg) => {
           <Typography
             variant="h5"
             sx={{
-              color: COLORS.gray,
+              color: theme.palette.text.primary,
               fontWeight: 'bold',
               fontSize: { xs: '1.3rem', md: '1.7rem' },
               letterSpacing: '0.5px',
@@ -235,7 +225,7 @@ const handleSend = (msg) => {
             <Box
               component="span"
               sx={{
-                color: COLORS.primary,
+                color: theme.palette.primary.main,
                 fontWeight: 700,
                 fontSize: 'inherit',
                 display: 'flex',
@@ -263,7 +253,7 @@ const handleSend = (msg) => {
             sx={{
               height: '3px',
               width: '180px',
-              backgroundColor: COLORS.primary,
+              backgroundColor: theme.palette.primary.main,
               borderRadius: 3,
               boxShadow: '0 4px 6px rgba(0, 0, 0, 0.15)',  // Ombre portée sur la barre
  
@@ -274,18 +264,18 @@ const handleSend = (msg) => {
         {/* Résumé en Français */}
         <Box
           sx={{
-            backgroundColor: COLORS.paperBackground,
+            backgroundColor: theme.palette.mode === 'dark' ? '#1a1a1a': '#f9f9f9',
             borderRadius: 4,
-            boxShadow: '-10px 0 20px rgba(27, 153, 139, 0.4)',
+            boxShadow: `-10px 0 20px ${theme.palette.primary.main}66`,
             pt: 2,
             pl: 4,
             pr: 4,
             pb: 4,
             mb: 4,
-            borderLeft: `6px solid ${COLORS.primary}`,
+            borderLeft: `6px solid ${theme.palette.primary.main}`,
           }}
         >
-          <h2 style={{ color: COLORS.primary, marginBottom: '12px' }}>Résumé en Français</h2>
+          <h2 style={{  color: theme.palette.primary.main, marginBottom: '12px' }}>Résumé en Français</h2>
         <ReactMarkdown
           components={{
             p: ({ node, ...props }) => (
@@ -294,7 +284,8 @@ const handleSend = (msg) => {
                 sx={{
                   fontFamily: 'inherit',
                   fontSize: '1rem',
-                  color: COLORS.gray,
+                   color: theme.palette.mode === 'dark'
+                        ? '#f9f9f9' :'#495057',
                   lineHeight: 1.7,
                   textAlign: 'justify',
                   wordBreak: 'break-word',
@@ -312,20 +303,20 @@ const handleSend = (msg) => {
         {/* Résumé en Arabe */}
         <Box
           sx={{
-            backgroundColor: COLORS.paperBackground,
+            backgroundColor: theme.palette.mode === 'dark' ? '#1a1a1a': '#f9f9f9',
             borderRadius: 4,
-            boxShadow: '10px 0 20px rgba(246, 126, 125, 0.4)',
+            boxShadow: `10px 0 20px ${theme.palette.secondary.main}66`,
             pt: 2,
             pl: 4,
             pr: 4,
             pb: 4,
             mb: 4,
-            borderRight: `6px solid ${COLORS.secondry}`,
+            borderRight: `6px solid ${theme.palette.secondary.main}`,
             direction: 'rtl',
             textAlign: 'justify',
           }}
         >
-          <h2 style={{ color: COLORS.secondry, marginBottom: '12px' }}>الملخص باللغة العربية</h2>
+          <h2 style={{ color: theme.palette.secondary.main, marginBottom: '12px' }}>الملخص باللغة العربية</h2>
          <ReactMarkdown
             components={{
               p: ({ node, ...props }) => (
@@ -334,7 +325,8 @@ const handleSend = (msg) => {
                   sx={{
                     fontFamily: 'inherit',
                     fontSize: '1rem',
-                    color: COLORS.gray,
+                    color: theme.palette.mode === 'dark'
+                        ? '#f9f9f9' :'#495057',
                     lineHeight: 1.8,
                     direction: 'rtl',
                     textAlign: 'justify',
@@ -352,7 +344,7 @@ const handleSend = (msg) => {
         </Box>
 
         <Box sx={{ mt: 6, mb: 6 }}>
-          <hr style={{ border: 'none', height: '2px', backgroundColor: COLORS.gray, opacity: 0.1 }} />
+          <hr style={{ border: 'none', height: '2px', backgroundColor: theme.palette.grey[500], opacity: 0.1 }} />
         </Box>
 
         {/* SECTION CHATBOT */}
@@ -361,7 +353,7 @@ const handleSend = (msg) => {
             <Typography
               variant="h5"
               sx={{
-                color: COLORS.gray,
+                color: theme.palette.text.primary,
                 fontWeight: 'bold',
                 fontSize: { xs: '1.3rem', md: '1.7rem' },
                 letterSpacing: '0.5px',
@@ -376,7 +368,7 @@ const handleSend = (msg) => {
                 height: '3px',
                 width: '200px',
                 margin: '8px auto 0',
-                backgroundColor: COLORS.primary,
+                backgroundColor: theme.palette.primary.main,
                 borderRadius: '4px',
                 boxShadow: '0 4px 6px rgba(0, 0, 0, 0.15)',  // Ombre portée sur la barre
  
@@ -396,7 +388,7 @@ const handleSend = (msg) => {
                   }}
                 >
                   {!isUser && (
-                    <Avatar sx={{ bgcolor: '#4e5655', mr: 1,mt:1 }}>
+                    <Avatar sx={{ bgcolor: theme.palette.grey[700], mr: 1,mt:1 }}>
                       <SmartToyIcon />
                     </Avatar>
                   )}
@@ -407,8 +399,14 @@ const handleSend = (msg) => {
                       maxWidth: '75%',
                       p: 1.5,
                       borderRadius: '20px',
-                      backgroundColor: isUser ? '#d1f5f0' : '#dee7e7',
-                      color: COLORS.gray,
+                      backgroundColor: isUser
+                      ? theme.palette.mode === 'dark'
+                        ? '#245953' // plus foncé que #a5ccc8
+                        : '#d1f5f0'
+                      : theme.palette.mode === 'dark'
+                        ? '#353535' // plus foncé que #c3cdcd
+                        : '#cfd8d8',
+                      color: theme.palette.text.primary,
                       fontSize: '1rem',
                       boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
                       wordBreak: 'break-word',
@@ -418,7 +416,7 @@ const handleSend = (msg) => {
                   </Paper>
 
                   {isUser && (
-                    <Avatar sx={{ bgcolor: COLORS.primary, ml: 1,mt:1 }}>
+                    <Avatar sx={{ bgcolor: theme.palette.primary.main, ml: 1,mt:1 }}>
                       <PersonIcon />
                     </Avatar>
                   )}

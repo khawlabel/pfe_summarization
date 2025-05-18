@@ -17,18 +17,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PaletteIcon from '@mui/icons-material/Palette';
 
-const COLORS = {
-  primary: '#1B998B',
-  secondry: '#f67e7d',
-  background: '#ebf1f8',
-  paperBackground: '#ffffff',
-  buttonBackground: '#1B998B',
-  buttonHover: '#14766d',
-  textFieldBorder: '#d0eae7',
-  textFieldFocusBorder: '#1B998B',
-  fileItemBackground: '#f4f6f9',
-};
-
 const CustomMenuIcon = (props) => (
   <SvgIcon {...props} viewBox="0 0 100 80" width="24" height="24">
     <rect width="100" height="10" rx="8" fill="currentColor"></rect>
@@ -37,24 +25,21 @@ const CustomMenuIcon = (props) => (
   </SvgIcon>
 );
 
-const Navbar = ({ onMenuClick, sidebarOpen }) => {
+const Navbar = ({ onMenuClick, sidebarOpen, onThemeChange }) => {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-
   const [themeAnchorEl, setThemeAnchorEl] = useState(null);
   const themeMenuOpen = Boolean(themeAnchorEl);
-
-  const [currentTheme, setCurrentTheme] = useState('light'); // ou 'dark'
-
+  const [currentTheme, setCurrentTheme] = useState('light');
+  
   const handleSelectTheme = (mode) => {
-      setCurrentTheme(mode);
-      setThemeAnchorEl(null);
-      // appelle ton système de changement de thème ici
-      // ex : toggleTheme(mode)
-    };
+    setCurrentTheme(mode);
+    onThemeChange(mode);
+    setThemeAnchorEl(null);
+  };
 
   const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -71,6 +56,7 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
   const handleThemeMenuClose = () => {
     setThemeAnchorEl(null);
   };
+
   const handleSettings = () => {
     alert('Paramètres');
     handleMenuClose();
@@ -86,32 +72,30 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
       position="fixed"
       elevation={0}
       sx={{
-        backgroundColor: '#f9f9f9',
-        color: COLORS.primary,
-        borderBottom: '1px solid #e0e0e0',
+        backgroundColor: theme.palette.mode === 'dark'
+                        ? '#1a1a1a' :'#f9f9f9',
+        color: theme.palette.primary.main,
+        borderBottom: `1px solid ${theme.palette.divider}`,
         zIndex: 1201,
-        boxShadow: '0 2px 8px rgba(27, 153, 139, 0.15)', // box-shadow léger sur la barre
+        boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(27,153,139,0.15)'}`,
       }}
     >
       <Toolbar sx={{ height: '68px' }}>
         {!sidebarOpen && (
           <IconButton
             edge="start"
-            color="inherit"
             onClick={onMenuClick}
             sx={{
-              backgroundColor: COLORS.primary,
-              color: '#fff',
+              backgroundColor: theme.palette.primary.main,
+              color:  theme.palette.background.default,
               borderRadius: '12px',
-              boxShadow: '0 6px 14px rgba(27, 153, 139, 0.35)', // ombre plus marquée pour bouton
+              boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
               mr: 2,
               mt: 1.5,
               ml: 1,
               mb: 1,
-              transition: 'background-color 0.3s ease',
               '&:hover': {
-                backgroundColor: COLORS.buttonHover,
-                boxShadow: '0 8px 20px rgba(20, 118, 109, 0.5)',
+                backgroundColor: theme.palette.primary.dark,
               },
             }}
           >
@@ -120,31 +104,30 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
         )}
 
         <Typography
-            variant="h6"
-            sx={{
-              flexGrow: 1,
-              fontWeight: 'bold',
-              mt: 0.5,
-              fontFamily: 'Arial, sans-serif',
-              fontSize: '1.6rem',
-              userSelect: 'none',
-              textShadow: '0 2px 6px rgba(27, 153, 139, 0.4)', // légère ombre portée au texte
-              // ou si tu préfères un boxShadow "bloc" autour du texte (un glow) :
-              // boxShadow: '0 4px 10px rgba(27, 153, 139, 0.3)',
-            }}
-          >
-            <span style={{ color: COLORS.primary }}>Sum</span>
-            <span style={{ color: COLORS.secondry }}>AI</span>
-          </Typography>
+          variant="h6"
+          sx={{
+            flexGrow: 1,
+            fontWeight: 'bold',
+            mt: 0.5,
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '1.6rem',
+            userSelect: 'none',
+            textShadow: theme.palette.mode === 'dark'
+              ? '0 2px 6px rgba(255, 255, 255, 0.1)'
+              : '0 2px 6px rgba(27, 153, 139, 0.4)',
+          }}
+        >
+          <span style={{ color: theme.palette.primary.main }}>Sum</span>
+          <span style={{ color: theme.palette.secondary.main }}>AI</span>
+        </Typography>
 
-        {/* Bouton profil à droite */}
         <Box>
           <IconButton
             size="large"
             edge="end"
-            color="inherit"
             onClick={handleProfileMenuOpen}
             sx={{
+              color: theme.palette.primary.main,
               '& svg': {
                 fontSize: 38,
                 transition: 'transform 0.3s ease',
@@ -161,44 +144,39 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
             anchorEl={anchorEl}
             open={open}
             onClose={handleMenuClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             PaperProps={{
               sx: {
-                backgroundColor: COLORS.paperBackground,
+                backgroundColor: theme.palette.background.paper,
                 borderRadius: '12px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)', // ombre plus douce et étendue pour menu
+                boxShadow: theme.shadows[5],
                 minWidth: 180,
                 p: 1,
               },
             }}
           >
             <MenuItem
-                onClick={handleThemeClick}
-                sx={{
-                  borderRadius: 2,
-                  color: COLORS.primary,
-                  '&:hover': {
-                    backgroundColor: COLORS.background,
-                  },
-                }}
-              >
-                <PaletteIcon sx={{ fontSize: 20, mr: 1 }} />
-                Thème
-              </MenuItem>
+              onClick={handleThemeClick}
+              sx={{
+                borderRadius: 2,
+                color: theme.palette.primary.main,
+                '&:hover': {
+                  backgroundColor: theme.palette.action.hover,
+                },
+              }}
+            >
+              <PaletteIcon sx={{ fontSize: 20, mr: 1 }} />
+              Thème
+            </MenuItem>
+
             <MenuItem
               onClick={handleSettings}
               sx={{
                 borderRadius: 2,
-                color: COLORS.primary,
+                color: theme.palette.primary.main,
                 '&:hover': {
-                  backgroundColor: COLORS.background,
+                  backgroundColor: theme.palette.action.hover,
                 },
               }}
             >
@@ -206,26 +184,16 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
               Paramètres
             </MenuItem>
 
-            <Divider
-              sx={{
-                my: 0.75,
-                width: '90%',
-                mx: 'auto',
-                borderColor: '#d3d3d3',
-                opacity: 0.6,
-                borderBottomWidth: '1.2px',
-                borderRadius: '2px',
-              }}
-            />
+            <Divider sx={{ my: 0.75, width: '90%', mx: 'auto' }} />
 
             <MenuItem
               onClick={handleLogout}
               sx={{
                 borderRadius: 2,
                 fontWeight: 'bold',
-                color: COLORS.secondry,
+                color: theme.palette.secondary.main,
                 '&:hover': {
-                  backgroundColor: '#ffe6e6',
+                  backgroundColor: theme.palette.mode === 'dark' ? '#5a4747': '#ffe6e6',
                 },
               }}
             >
@@ -233,43 +201,38 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
               Déconnexion
             </MenuItem>
           </Menu>
-            <Menu
-                anchorEl={themeAnchorEl}
-                open={themeMenuOpen}
-                onClose={handleThemeMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                PaperProps={{
-                  sx: {
-                    backgroundColor: COLORS.paperBackground,
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                    minWidth: 180,
-                    p: 1,
-                  },
-                }}
-              >
-                <MenuItem
-                  onClick={() => handleSelectTheme('light')}
-                  selected={currentTheme === 'light'}
-                  sx={{ borderRadius: 2 }}
-                >
-                  🌞 Mode clair
-                </MenuItem>
-                <MenuItem
-                  onClick={() => handleSelectTheme('dark')}
-                  selected={currentTheme === 'dark'}
-                  sx={{ borderRadius: 2 }}
-                >
-                  🌙 Mode sombre
-                </MenuItem>
-              </Menu>
+
+          <Menu
+            anchorEl={themeAnchorEl}
+            open={themeMenuOpen}
+            onClose={handleThemeMenuClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            PaperProps={{
+              sx: {
+                backgroundColor: theme.palette.background.paper,
+                borderRadius: '12px',
+                boxShadow: theme.shadows[5],
+                minWidth: 180,
+                p: 1,
+              },
+            }}
+          >
+            <MenuItem
+              onClick={() => handleSelectTheme('light')}
+              selected={currentTheme === 'light'}
+              sx={{ borderRadius: 2 }}
+            >
+              🌞 Mode clair
+            </MenuItem>
+            <MenuItem
+              onClick={() => handleSelectTheme('dark')}
+              selected={currentTheme === 'dark'}
+              sx={{ borderRadius: 2 }}
+            >
+              🌙 Mode sombre
+            </MenuItem>
+          </Menu>
         </Box>
       </Toolbar>
     </AppBar>

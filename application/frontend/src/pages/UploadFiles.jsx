@@ -1,31 +1,35 @@
 import React, { useState ,useEffect} from 'react';
-import { Box, Typography, Paper, Button, IconButton } from '@mui/material';
+import { Box, useTheme, Typography, Paper, Button, IconButton } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CloseIcon from '@mui/icons-material/Close';  // Icone pour retirer un fichier
-import ChatBotGif from '../images/Chat_bot.gif';
+import ChatBotGifClair from '../images/Chatbot_clair.gif';
+import ChatBotGifSombre from '../images/Chat_bot.gif';
 import Arrow from '../images/arrow (3).png'; // Import de l'image de la flèche
-import BackgroundDescription from '../images/shape9.png';
+import BackgroundDescription_clair from '../images/shape_clair.png';
+import BackgroundDescription_sombre from '../images/shape_sombre.png';
 import { uploadfiles,setFiles } from '../features/files/filesSlice';
 import { Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import CircularProgress from '@mui/material/CircularProgress';
 
-const COLORS = {
-  primary: '#1B998B',
-  secondry: '#444',
-  background: '#ebf1f8',
-  paperBackground: '#ffffff',
-  buttonBackground: '#1B998B',
-  buttonHover: '#14766d',
-  textFieldBorder: '#d0eae7',
-  textFieldFocusBorder: '#1B998B',
-  fileItemBackground: '#f4f6f9',
-};
-
 
 const UploadFiles = () => {
+   const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
+  const getColors = (isDarkMode) => ({
+        primary: '#1B998B',
+        secondry: isDarkMode ? '#ddd' : '#444',
+        background: isDarkMode ? '#121212' : '#ebf1f8',
+        paperBackground: isDarkMode ? '#3A3A3A' : '#ffffff',
+        buttonBackground: '#1B998B',
+        buttonHover: '#14766d',
+        textFieldBorder: isDarkMode ? '#254B46' : '#d0eae7',
+        textFieldFocusBorder: '#1B998B',
+        fileItemBackground: isDarkMode ? '#2c2c2c' : '#f4f6f9',
+      });
+  const COLORS = getColors(isDarkMode);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -117,10 +121,10 @@ const UploadFiles = () => {
         {/* Colonne gauche : Description */}
         <Box
           sx={{
-            width: { xs: '100%', md: '70%' },
+            width: { xs: '90%', md: '70%' },
             textAlign: 'justify',
               marginLeft: { xs: 0 , md: 3 },
-               backgroundImage: `url(${BackgroundDescription})`,
+                backgroundImage: isDarkMode? `url(${BackgroundDescription_sombre})`: `url(${BackgroundDescription_clair})`,
                 backgroundSize: '95%',
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'center',
@@ -133,7 +137,7 @@ const UploadFiles = () => {
               sx={{
                 fontWeight: 'bold',
                 fontSize: { xs: '2.2rem', md: '3rem' },
-                color: COLORS.secondry,
+                color: isDarkMode ? COLORS.primary : '#444',
                 mb: 2,
                 lineHeight: 1.2,
               }}
@@ -183,8 +187,8 @@ const UploadFiles = () => {
           }}
         >
          <img
-            src={ChatBotGif}
-            alt="Illustration IA"
+           src= {isDarkMode ? ChatBotGifSombre : ChatBotGifClair}
+             alt="Illustration IA"
             style={{ width: '100%', maxWidth: '320px' }}
           />
         </Box>
@@ -213,7 +217,9 @@ const UploadFiles = () => {
             padding: 6,
             background: COLORS.paperBackground,
             textAlign: 'center',
-            boxShadow: '0px 15px 45px rgba(0, 0, 0, 0.15)',
+            boxShadow: isDarkMode
+                ? '0 4px 15px rgba(100, 255, 255, 0.08)'  // glow très léger cyan clair
+                : '0px 15px 45px rgba(0, 0, 0, 0.15)',
             width: '100%',
             maxWidth: 600,
             overflowY: 'auto',
@@ -227,11 +233,11 @@ const UploadFiles = () => {
                 borderRadius: '20px',
                 p: 4,
                 cursor: 'pointer',
-                backgroundColor: '#fff',
+                backgroundColor: isDarkMode ? '#2c2c2c' : '#fff', // 🔧 ICI : fond plus sombre en mode dark
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  backgroundColor: '#f1fdfb',
-                  borderColor: COLORS.buttonHover,
+                   backgroundColor: isDarkMode ? '#2C3432' : '#f1fdfb', // 🔧 ICI aussi pour le hover
+                   borderColor: COLORS.buttonHover,
                 },
               }}
 

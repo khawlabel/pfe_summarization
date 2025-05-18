@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Box,
+  useTheme,
   TextField,
   IconButton,
   Paper,
@@ -20,7 +21,9 @@ const ChatInput = ({ onSend, onReset }) => {
   const resetBDD = useSelector(state => state.files.reset);  // adapte le nom du slice
   const { isLoading, isError, isSuccess } = resetBDD;
 
-  
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
+
   useEffect(() => {
     if (isSuccess) {
       // Redirection après 3 secondes
@@ -63,8 +66,7 @@ const ChatInput = ({ onSend, onReset }) => {
         zIndex: 1000,
         display: 'flex',
         justifyContent: 'center',
-          backgroundColor: '#f0f4f8',
-
+        backgroundColor: isDarkMode ? theme.palette.background.default : '#f0f4f8',
       }}
     >
       <Paper
@@ -76,18 +78,18 @@ const ChatInput = ({ onSend, onReset }) => {
           maxWidth:  { xs: '330px',sm:'530px',md: '670px' ,lg: '780px' },
           padding: '8px 12px',
           borderRadius: '24px',
-          backgroundColor: '#ffffff',
+          backgroundColor: isDarkMode ? theme.palette.background.paper : '#ffffff',
         }}
       >
         <Tooltip title="Réinitialiser pour résumer de nouveaux fichiers" arrow placement="top">
           <IconButton
             onClick={handleReset}
             sx={{
-              color: '#f67e7d',
+              color: isDarkMode ? '#f28b82' : '#f67e7d',
               marginRight: 1,
-              backgroundColor: '#fceeee',
+              backgroundColor: isDarkMode ? '#3a2a2a' : '#fceeee',
               '&:hover': {
-                backgroundColor: '#fbd2d2',
+                backgroundColor: isDarkMode ? '#593636' : '#fbd2d2',
               },
             }}
           >
@@ -116,7 +118,7 @@ const ChatInput = ({ onSend, onReset }) => {
           }}
         />
 
-        <IconButton onClick={handleSend} sx={{ color: '#1B998B' }}>
+        <IconButton onClick={handleSend} sx={{ color: isDarkMode ? '#80cbc4' : '#1B998B', }}>
           <SendIcon />
         </IconButton>
       </Paper>
