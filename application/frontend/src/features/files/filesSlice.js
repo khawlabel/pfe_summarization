@@ -13,6 +13,7 @@ const getUserfromLocalStorage = localStorage.getItem("user")
 const initialState = {
   user: getUserfromLocalStorage,
   generate_summary:null,
+  reset:null,
   files:null,
   uploadefiles: "",
   isError: false,
@@ -42,6 +43,21 @@ export const generate_summary = createAsyncThunk(
   async (files, thunkAPI) => {
     try {
       return await filesService.generate_summary(files);
+    } catch (error) {
+      const message =
+        error.response?.data?.error || // <-- pour FastAPI
+        error.response?.data?.detail ||
+        error.message;
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+export const reset = createAsyncThunk(
+  "files/reset",
+  async (thunkAPI) => {
+    try {
+      return await filesService.reset();
     } catch (error) {
       const message =
         error.response?.data?.error || // <-- pour FastAPI
@@ -95,6 +111,22 @@ export const filesSlice = createSlice({
         state.message = "success";
       })
       .addCase(generate_summary.rejected, (state, action) => {
+        state.isError = true;
+        state.isLoading = false;
+        state.isSuccess = false;
+        state.message = action.payload || action.error.message;
+      })
+      .addCase(reset.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(reset.fulfilled, (state, action) => {
+        state.isError = false;
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.reset = action.payload;
+        state.message = "success";
+      })
+      .addCase(reset.rejected, (state, action) => {
         state.isError = true;
         state.isLoading = false;
         state.isSuccess = false;

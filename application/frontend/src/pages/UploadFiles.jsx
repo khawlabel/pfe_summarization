@@ -31,10 +31,7 @@ const UploadFiles = () => {
   const navigate = useNavigate();
   const upload = useSelector((state) => state.files);
   const { isLoading, isError, isSuccess, message } = upload;
-
-
   
-
   const [files, setFiles] = useState([]);
   const [rejectedFiles, setRejectedFiles] = useState([]);
 

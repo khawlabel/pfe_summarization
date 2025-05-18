@@ -8,9 +8,40 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import axios from "axios";
+import { useNavigate } from 'react-router-dom';  // si tu utilises react-router
+import { useDispatch, useSelector } from 'react-redux';
+import { reset } from '../features/files/filesSlice';
 
 const ChatInput = ({ onSend, onReset }) => {
   const [message, setMessage] = React.useState('');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();  // Hook pour redirection
+  const resetBDD = useSelector(state => state.files.reset);  // adapte le nom du slice
+  const { isLoading, isError, isSuccess } = resetBDD;
+
+  
+  useEffect(() => {
+    if (isSuccess) {
+      // Redirection après 3 secondes
+      setTimeout(() => {
+          navigate('/uploadfiles');
+        }, 500);
+      }
+    }, [isSuccess, navigate, files]);
+
+    // Gestion du click sur "Réinitialiser"
+    const handleReset = async () => {
+      try {
+        await dispatch(reset());  // unwrap pour gérer erreurs si besoin
+        // Si succès, rediriger vers la page d'upload
+        navigate('/uploadfiles');
+      } catch (error) {
+        console.error("Erreur lors de la réinitialisation :", error);
+        // tu peux aussi afficher un message d'erreur utilisateur
+      }
+    };
+  
 
   const handleSend = () => {
     if (message.trim()) {
@@ -19,12 +50,7 @@ const ChatInput = ({ onSend, onReset }) => {
     }
   };
 
-  const handleReset = () => {
-    setMessage('');
-    if (onReset) {
-      onReset();
-    }
-  };
+
 
   return (
     <Box

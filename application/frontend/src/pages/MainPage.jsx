@@ -7,9 +7,6 @@ import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import ReactMarkdown from 'react-markdown';
 import AI from '../images/ai.png';
-import axios from "axios";
-
-import { useDispatch, useSelector } from 'react-redux';
 
 const COLORS = {
   primary: '#1B998B',
@@ -25,7 +22,6 @@ const COLORS = {
 };
 
 const MainPage = () => {
-  const dispatch = useDispatch();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isFrenchReady, setIsFrenchReady] = useState(false);
   const [isArabicReady, setIsArabicReady] = useState(false);
@@ -33,6 +29,7 @@ const MainPage = () => {
   const [streamingIndex, setStreamingIndex] = useState(null);
   const [frenchSummary, setFrenchSummary] = useState('');
   const [frenchTitle, setFrenchTitle] = useState('');
+  const [arabicitle, setArabicTitle] = useState('');
   const [arabicSummary, setArabicSummary] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -58,6 +55,9 @@ const streamEndpoint = async (url, onChunk) => {
       setIsGenerating(true);
       setFrenchTitle('');
       setFrenchSummary('');
+      setArabicTitle('');
+      setArabicSummary('');
+
 
       try {
         // 1) streamer le titre
@@ -65,11 +65,22 @@ const streamEndpoint = async (url, onChunk) => {
           setFrenchTitle(prev => prev + chunk);
         });
 
+
         // 2) une fois le titre complet, ajouter un saut de ligne puis streamer le résumé
         setFrenchSummary(prev => prev + '\n'); // séparer visuellement
         await streamEndpoint('http://127.0.0.1:8000/generate_summary_fr', chunk => {
           setFrenchSummary(prev => prev + chunk);
         });
+
+        await streamEndpoint('http://127.0.0.1:8000/generate_titre_ar', chunk => {
+          setArabicTitle(prev => prev + chunk);
+        });
+                // 2) une fois le titre complet, ajouter un saut de ligne puis streamer le résumé
+        setArabicSummary(prev => prev + '\n'); // séparer visuellement
+        await streamEndpoint('http://127.0.0.1:8000/generate_summary_ar', chunk => {
+          setArabicSummary(prev => prev + chunk);
+        });
+
 
       } catch (err) {
         console.error('Erreur de streaming :', err);
@@ -111,20 +122,80 @@ const streamEndpoint = async (url, onChunk) => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSend = (msg) => {
-    const newMessages = [...messages, { from: 'user', text: msg }];
-    setMessages(newMessages);
+const handleSend = (msg) => {
+  // Ajouter le message user immédiatement
+  const newMessages = [...messages, { from: 'user', text: msg }];
+  setMessages(newMessages);
 
-    setTimeout(() => {
-      setMessages(prev => [
-        ...prev,
-        {
-          from: 'bot',
-          text: `**Merci pour votre question !**\n\nVoici une réponse *simulée* avec du _markdown_.\n\n- Point 1\n- Point 2`,
-        },
-      ]);
-    }, 1000);
-  };
+  // Préparer un message bot vide à mettre à jour au fur et à mesure
+  setMessages((prev) => [
+    ...prev,
+    { from: 'bot', text: '' },
+  ]);
+
+  // On récupère l'index du dernier message bot (celui vide qu'on vient d'ajouter)
+  const botMessageIndex = newMessages.length;
+
+  // Créer un EventSource vers le backend
+  const eventSource = new EventSource('http://localhost:8000/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    // EventSource ne supporte pas POST nativement, donc il faudra utiliser fetch avec ReadableStream à la place
+  });
+
+  // Comme EventSource ne supporte pas POST, on fera avec fetch + ReadableStream (plus flexible)
+
+  fetch('http://localhost:8000/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      user_input: msg,
+    }),
+  }).then(response => {
+    if (!response.body) {
+      throw new Error('ReadableStream not supported');
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let botResponse = '';
+
+    function read() {
+      reader.read().then(({ done, value }) => {
+        if (done) {
+          // Fin du stream, mettre à jour le message complet
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[botMessageIndex] = { from: 'bot', text: botResponse };
+            return updated;
+          });
+          return;
+        }
+        // Décoder le chunk reçu
+        const chunk = decoder.decode(value);
+        botResponse += chunk;
+
+        // Mettre à jour le message bot en streaming
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[botMessageIndex] = { from: 'bot', text: botResponse };
+          return updated;
+        });
+        read();
+      });
+    }
+    read();
+  }).catch(err => {
+    // Gérer erreurs fetch
+    setMessages((prev) => [
+      ...prev,
+      { from: 'bot', text: "Erreur lors de la connexion au serveur." },
+    ]);
+    console.error(err);
+  });
+};
+
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: COLORS.background }}>
@@ -274,9 +345,8 @@ const streamEndpoint = async (url, onChunk) => {
               ),
             }}
           >
-          {`**العنوان:** وزارة الطاقة والمناجم: أكثر من 1.5 مليون جزائري متصلون الآن بالإنترنت عبر الألياف البصرية.
-       \n\n   **الملخص:** أعلنت وزارة الاتصالات عن تحسن نوعي في تغطية شبكات الاتصالات في الجزائر، حيث تم تزويد أكثر من 1.5 مليون منزل بالألياف البصرية، وبلغ عدد المنازل المتصلة بالإنترنت الثابت 5.8 ملايين، وذلك وفقًا لبيان رسمي. وقد تم تحقيق هذه "القفزة النوعية" في مجال شبكات الاتصالات في إطار تنفيذ تعليمات رئيس الجمهورية، عبد المجيد تبون، المتعلقة بتحسين تغطية شبكات الاتصالات.
-          `}
+           { `**العنوان :**\n${arabicitle.trim()}\n\n**الملخص :**\n${arabicSummary.trim()}`}
+
           </ReactMarkdown>
 
         </Box>
