@@ -25,6 +25,8 @@ const MainPage = () => {
   const [arabicitle, setArabicTitle] = useState('');
   const [arabicSummary, setArabicSummary] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isResponding, setIsResponding] = useState(false);
+
 
 
 // helper pour streamer un endpoint text/plain ou event-stream
@@ -130,6 +132,8 @@ const handleSend = (msg) => {
 
   // On récupère l'index du dernier message bot (celui vide qu'on vient d'ajouter)
   const botMessageIndex = newMessages.length;
+  setIsResponding(true); // <- Commence la réponse
+
 
   // Créer un EventSource vers le backend
   const eventSource = new EventSource('http://localhost:8000/chat', {
@@ -165,6 +169,7 @@ const handleSend = (msg) => {
             updated[botMessageIndex] = { from: 'bot', text: botResponse };
             return updated;
           });
+          setIsResponding(false); // <- Fin de réponse
           return;
         }
         // Décoder le chunk reçu
@@ -187,6 +192,7 @@ const handleSend = (msg) => {
       ...prev,
       { from: 'bot', text: "Erreur lors de la connexion au serveur." },
     ]);
+    setIsResponding(false); // <- En cas d'erreur aussi
     console.error(err);
   });
 };
@@ -437,6 +443,8 @@ const handleSend = (msg) => {
         <ChatInput
           onSend={handleSend}
           onReset={() => setMessages([])}
+          isResponding={isResponding}
+
         />
       )}
     </Box>
