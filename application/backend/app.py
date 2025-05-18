@@ -286,6 +286,12 @@ async def upload_and_store_file(
                 "file_name": file_name,
                 "file_type": file_type
             })
+            app.state.retrieved_contexts.append({
+             "contenu":text,
+             "file_name":file_name,
+             "file_type":file_type
+
+            })
 
             results.append({"file_name": file_name, "message": "✅ Fichier traité avec succès."})
 

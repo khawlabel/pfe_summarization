@@ -68,18 +68,16 @@ const Register = () => {
 
 
 
-    useEffect(() => {
-      if (auth.isErrorregister ) {
-        setShowError(true);
-        setShowSuccess(false);
-      } else if (auth.isSuccessregister ) {
-        setShowSuccess(true);
-        setShowError(false);
-      } else {
-        setShowError(false);
-        setShowSuccess(false);
-      }
-    }, [auth.isErrorregister , auth.isSuccessregister ]);
+  useEffect(() => {
+    if (auth.isErrorregister) {
+      setShowError(true);
+      setShowSuccess(false);
+    } else if (auth.isSuccessregister) {
+      setShowSuccess(true);
+      setShowError(false);
+       }
+  }, [auth.isErrorregister, auth.isSuccessregister, dispatch]);
+
 
 
 
@@ -100,15 +98,21 @@ const Register = () => {
       },
       validationSchema: schema,
       onSubmit: (values) => {
+        setShowError(false); // Cache l'erreur précédente
         dispatch(register(values));
-        formik.resetForm();
-
       },
+
     });
+    
+    useEffect(() => {
+      return () => {
+        dispatch(resetRegister());
+      };
+    }, [dispatch]);
+
 
       useEffect(() => {
       formik.resetForm();
-      dispatch(resetRegister());
       
       }, [dispatch]);
 

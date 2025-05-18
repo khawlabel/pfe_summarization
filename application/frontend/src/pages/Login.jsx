@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import { useFormik } from 'formik';
 import { useDispatch, useSelector } from 'react-redux';
-import { login } from '../features/Auth/authSlice';
+import { login, resetLogin } from '../features/Auth/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 import { useLocation } from 'react-router-dom';
@@ -34,7 +34,7 @@ const Login = () => {
   // Local state pour afficher l'alerte
   const [showError, setShowError] = useState(false);
   useEffect(() => {
-    if (auth.isErrorlogin) {
+    if (auth.isErrorlogin == true) {
       setShowError(true);
     }
   }, [auth.isErrorlogin]);
@@ -47,6 +47,7 @@ const Login = () => {
 
     // Si utilisateur connecté dans Redux, redirige vers page protégée
     if (auth.user?.access_token) {
+      setShowError(false); // <-- cache l'erreur quand c'est un succès
       window.location.reload()
     }
   }, [auth.user, navigate]);
