@@ -14,14 +14,14 @@ import * as yup from 'yup';
 import { Alert } from '@mui/material';
 
 const COLORS = {
-  primary: '#1B998B  ',
-  secondry: '#625f63    ',
-  background: '#f4f6f9',
-  paperBackground: '#ffffff',
-  buttonBackground: '#1B998B  ',
-  buttonHover: '#166b79',
-  textFieldBorder: '#1B998B ',
-  textFieldFocusBorder: '#166b79',
+  primary: '#1B998B',                // On garde la couleur principale
+  secondry: '#cccccc',              // Texte secondaire clair
+  background: '#1c1c1c',            // Fond général sombre
+  paperBackground: '#2a2a2a',       // Fond des papiers sombre
+  buttonBackground: '#1B998B',      // Bouton couleur principale
+  buttonHover: '#166b79',           // Hover du bouton
+  textFieldBorder: '#444',          // Bord sombre
+  textFieldFocusBorder: '#1B998B',  // Focus avec couleur principale
   linkHover: '#E94E1B',
 };
 
@@ -37,6 +37,40 @@ const Login = () => {
   formik.resetForm();
   dispatch(reset());  // reset état auth aussi
   }, [dispatch]);
+
+   const textFieldStyle = {
+        backgroundColor: '#2C2C2C', // fond du champ
+        borderRadius: 1,
+        '& .MuiOutlinedInput-root': {
+          '& input': {
+            color: '#ffffff', // texte blanc
+          },
+          '& fieldset': {
+            borderColor: COLORS.textFieldBorder,
+          },
+          '&:hover fieldset': {
+            borderColor: COLORS.buttonHover,
+          },
+          '&.Mui-focused fieldset': {
+            borderColor: COLORS.textFieldFocusBorder,
+            borderWidth: '2px',
+          },
+        },
+        '& .MuiInputLabel-root': {
+          color: '#aaa', // label initial
+          fontSize: '0.9rem',
+          '&.Mui-focused': {
+            color: COLORS.primary, // label quand focus
+          },
+        },
+        '& .MuiFormHelperText-root': {
+          color: '#ff6b6b', // couleur de l'aide/erreur
+        },
+        '& input:-webkit-autofill': {
+        WebkitBoxShadow: '0 0 0 1000px #2C2C2C inset !important',
+        WebkitTextFillColor: '#ffffff !important',
+      },
+      };
 
 
   useEffect(() => {
@@ -90,7 +124,7 @@ const Login = () => {
           flexDirection: 'row',
           borderRadius: 4,
           backgroundColor: COLORS.paperBackground,
-          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)', // plus prononcé
           overflow: 'hidden',
           width: {
           xs: '80%',   // petits écrans (téléphones)
@@ -129,24 +163,13 @@ const Login = () => {
                 label="Email"
                 name="email"
                 type="email"
-                autoComplete="email"
+                autoComplete="off"
                 autoFocus
                 value={formik.values.email}
                 onChange={formik.handleChange}
                 error={formik.touched.email && Boolean(formik.errors.email)}
                 helperText={formik.touched.email && formik.errors.email}
-                sx={{
-                  backgroundColor: '#fff',
-                  borderRadius: 1,
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': { borderColor: COLORS.textFieldBorder },
-                    '&:hover fieldset': { borderColor: COLORS.buttonHover },
-                    '&.Mui-focused fieldset': { borderColor: COLORS.buttonHover },
-                  },
-                  '& .MuiInputLabel-root': { 
-                    '&.Mui-focused': { color: '#166b79' },
-                    fontSize: '0.875rem' },
-                }}
+                sx={textFieldStyle}
               />
               <TextField
                 margin="dense"
@@ -156,23 +179,12 @@ const Login = () => {
                 label="Mot de passe"
                 type="password"
                 id="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 value={formik.values.password}
                 onChange={formik.handleChange}
                 error={formik.touched.password && Boolean(formik.errors.password)}
                 helperText={formik.touched.password && formik.errors.password}
-                sx={{
-                  backgroundColor: '#fff',
-                  borderRadius: 1,
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': { borderColor: COLORS.textFieldBorder },
-                    '&:hover fieldset': { borderColor: COLORS.buttonHover },
-                    '&.Mui-focused fieldset': { borderColor: COLORS.buttonHover },
-                  },
-                  '& .MuiInputLabel-root': { 
-                    fontSize: '0.875rem',
-                    '&.Mui-focused': { color: '#166b79' }, },
-                }}
+                sx={textFieldStyle}
               />
               <Button
                 type="submit"
@@ -184,7 +196,7 @@ const Login = () => {
                   backgroundColor: COLORS.buttonBackground,
                   fontSize: '0.875rem',
                   fontWeight: 'bold',
-                  borderRadius: 2,
+                  borderRadius: 3,
                   '&:hover': { backgroundColor: COLORS.buttonHover, transform: 'scale(1.03)' },
                   padding: '10px 0',
                 }}

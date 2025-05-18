@@ -10,13 +10,17 @@ import { verifyCompte }  from '../features/Auth/authSlice';
 import { useNavigate } from 'react-router-dom';
 
 const COLORS = {
-  primary: '#1B998B',
-  secondry: '#625f63',
-  background: '#f0f4f8',
-  paperBackground: '#ffffff',
-  buttonBackground: '#1B998B',
-  buttonHover: '#166b79',
+  primary: '#1B998B',                // On garde la couleur principale
+  secondry: '#cccccc',              // Texte secondaire clair
+  background: '#1c1c1c',            // Fond général sombre
+  paperBackground: '#2a2a2a',       // Fond des papiers sombre
+  buttonBackground: '#1B998B',      // Bouton couleur principale
+  buttonHover: '#166b79',           // Hover du bouton
+  textFieldBorder: '#444',          // Bord sombre
+  textFieldFocusBorder: '#1B998B',  // Focus avec couleur principale
+  linkHover: '#E94E1B',
 };
+
 
 const Verification = () => {
 
@@ -49,6 +53,7 @@ const Verification = () => {
           padding: 5,
           borderRadius: 4,
           backgroundColor: COLORS.paperBackground,
+          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)', // plus prononcé
           maxWidth: 500,
           width: '100%',
           textAlign: 'center',
@@ -93,9 +98,9 @@ const Verification = () => {
           sx={{
             mt: 2,
             backgroundColor: COLORS.buttonBackground,
+            fontSize: '0.875rem',
             fontWeight: 'bold',
-            textTransform: 'none',
-            borderRadius: 2,
+            borderRadius: 3,
             padding: '10px 20px',
             '&:hover': {
               backgroundColor: COLORS.buttonHover,
