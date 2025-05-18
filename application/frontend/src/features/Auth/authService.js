@@ -9,9 +9,6 @@ const login = async (user) => {
     'Content-Type': 'application/json'
   }});
 
-  if (response.data) {
-    localStorage.setItem("user", JSON.stringify(response.data));
-  }
   return response.data;
   };
 

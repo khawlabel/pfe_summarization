@@ -1,27 +1,28 @@
-import React, { useEffect,useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   TextField,
   Button,
   Box,
   Typography,
-  Paper
+  Paper,
+  Alert
 } from '@mui/material';
 import { useFormik } from 'formik';
 import { useDispatch, useSelector } from 'react-redux';
-import { login,reset } from '../features/Auth/authSlice';
+import { login } from '../features/Auth/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
-import { Alert } from '@mui/material';
+import { useLocation } from 'react-router-dom';
 
 const COLORS = {
-  primary: '#1B998B',                // On garde la couleur principale
-  secondry: '#cccccc',              // Texte secondaire clair
-  background: '#1c1c1c',            // Fond général sombre
-  paperBackground: '#2a2a2a',       // Fond des papiers sombre
-  buttonBackground: '#1B998B',      // Bouton couleur principale
-  buttonHover: '#166b79',           // Hover du bouton
-  textFieldBorder: '#444',          // Bord sombre
-  textFieldFocusBorder: '#1B998B',  // Focus avec couleur principale
+  primary: '#1B998B',
+  secondry: '#cccccc',
+  background: '#1c1c1c',
+  paperBackground: '#2a2a2a',
+  buttonBackground: '#1B998B',
+  buttonHover: '#166b79',
+  textFieldBorder: '#444',
+  textFieldFocusBorder: '#1B998B',
   linkHover: '#E94E1B',
 };
 
@@ -30,81 +31,76 @@ const Login = () => {
   const navigate = useNavigate();
   const auth = useSelector((state) => state.auth);
 
-
   // Local state pour afficher l'alerte
   const [showError, setShowError] = useState(false);
-    useEffect(() => {
-  formik.resetForm();
-  dispatch(reset());  // reset état auth aussi
-  }, [dispatch]);
-
-   const textFieldStyle = {
-        backgroundColor: '#2C2C2C', // fond du champ
-        borderRadius: 1,
-        '& .MuiOutlinedInput-root': {
-          '& input': {
-            color: '#ffffff', // texte blanc
-          },
-          '& fieldset': {
-            borderColor: COLORS.textFieldBorder,
-          },
-          '&:hover fieldset': {
-            borderColor: COLORS.buttonHover,
-          },
-          '&.Mui-focused fieldset': {
-            borderColor: COLORS.textFieldFocusBorder,
-            borderWidth: '2px',
-          },
-        },
-        '& .MuiInputLabel-root': {
-          color: '#aaa', // label initial
-          fontSize: '0.9rem',
-          '&.Mui-focused': {
-            color: COLORS.primary, // label quand focus
-          },
-        },
-        '& .MuiFormHelperText-root': {
-          color: '#ff6b6b', // couleur de l'aide/erreur
-        },
-        '& input:-webkit-autofill': {
-        WebkitBoxShadow: '0 0 0 1000px #2C2C2C inset !important',
-        WebkitTextFillColor: '#ffffff !important',
-      },
-      };
-
-
   useEffect(() => {
-    if (auth.isError) {
+    if (auth.isErrorlogin) {
       setShowError(true);
-    } else {
-      setShowError(false);
     }
-  }, [auth.isError]);
+  }, [auth.isErrorlogin]);
+
+
+  const location = useLocation();
+
 
   useEffect(() => {
-    if (auth.isSuccess) {
-      navigate('/uploadfiles');
+
+    // Si utilisateur connecté dans Redux, redirige vers page protégée
+    if (auth.user?.access_token) {
+      window.location.reload()
     }
-  }, [auth.isSuccess, navigate]);
+  }, [auth.user, navigate]);
+
+  const textFieldStyle = {
+    backgroundColor: '#2C2C2C',
+    borderRadius: 1,
+    '& .MuiOutlinedInput-root': {
+      '& input': {
+        color: '#ffffff',
+      },
+      '& fieldset': {
+        borderColor: COLORS.textFieldBorder,
+      },
+      '&:hover fieldset': {
+        borderColor: COLORS.buttonHover,
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: COLORS.textFieldFocusBorder,
+        borderWidth: '2px',
+      },
+    },
+    '& .MuiInputLabel-root': {
+      color: '#aaa',
+      fontSize: '0.9rem',
+      '&.Mui-focused': {
+        color: COLORS.primary,
+      },
+    },
+    '& .MuiFormHelperText-root': {
+      color: '#ff6b6b',
+    },
+    '& input:-webkit-autofill': {
+      WebkitBoxShadow: '0 0 0 1000px #2C2C2C inset !important',
+      WebkitTextFillColor: '#ffffff !important',
+    },
+  };
 
   const schema = yup.object().shape({
     email: yup.string().email("L’adresse e-mail doit être valide").required("Ce champ est obligatoire"),
     password: yup.string().required("Ce champ est obligatoire"),
   });
 
-
   const formik = useFormik({
     initialValues: {
-      email:'',
+      email: '',
       password: '',
     },
     validationSchema: schema,
     onSubmit: (values) => {
       dispatch(login(values));
-      formik.resetForm();
+
     },
   });
-
 
   return (
     <Box
@@ -124,19 +120,17 @@ const Login = () => {
           flexDirection: 'row',
           borderRadius: 4,
           backgroundColor: COLORS.paperBackground,
-          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)', // plus prononcé
+          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)',
           overflow: 'hidden',
           width: {
-          xs: '80%',   // petits écrans (téléphones)
-          sm: '60%',   // tablettes
-          md: '50%',   // desktops moyens
-          lg: '40%',   // écrans larges
-        },
-        maxWidth: '500px', // pour éviter qu'il s'étale trop sur très grands écrans
-      
+            xs: '80%',
+            sm: '60%',
+            md: '50%',
+            lg: '40%',
+          },
+          maxWidth: '500px',
         }}
       >
-        {/* Left side: Login Form */}
         <Box sx={{ flex: 1, padding: 4 }}>
           <Box display="flex" flexDirection="column" alignItems="center">
             <Typography
@@ -147,13 +141,12 @@ const Login = () => {
               Connexion
             </Typography>
 
-                        {/* Affichage de l'alerte d'erreur */}
             {showError && (
               <Alert severity="error" sx={{ mb: 2, width: '93%' }}>
-                {auth.message}
+                {auth.messagelogin}
               </Alert>
             )}
-            
+
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 1 }}>
               <TextField
                 margin="dense"
@@ -167,6 +160,7 @@ const Login = () => {
                 autoFocus
                 value={formik.values.email}
                 onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
                 error={formik.touched.email && Boolean(formik.errors.email)}
                 helperText={formik.touched.email && formik.errors.email}
                 sx={textFieldStyle}
@@ -182,6 +176,7 @@ const Login = () => {
                 autoComplete="new-password"
                 value={formik.values.password}
                 onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
                 error={formik.touched.password && Boolean(formik.errors.password)}
                 helperText={formik.touched.password && formik.errors.password}
                 sx={textFieldStyle}
@@ -190,6 +185,7 @@ const Login = () => {
                 type="submit"
                 fullWidth
                 variant="contained"
+                disabled={auth.isLoadinglogin}
                 sx={{
                   mt: 2,
                   mb: 2,
@@ -201,34 +197,23 @@ const Login = () => {
                   padding: '10px 0',
                 }}
               >
-                Se connecter
+                {auth.isLoadinglogin ? "Connexion..." : "Se connecter"}
               </Button>
             </Box>
           </Box>
-          <Typography variant="body2" align="center" sx={{color: COLORS.secondry,  fontWeight: 'normal', fontFamily: 'lato' }}>
-            Voulez n'avez pas de compte ?{' '}
+          <Typography variant="body2" align="center" sx={{ color: COLORS.secondry, fontWeight: 'normal', fontFamily: 'lato' }}>
+            Vous n'avez pas de compte ?{' '}
             <Link
-                          to="/register"
-                          style={{ color: COLORS.primary, fontWeight: 'bold', textDecoration: 'none', fontFamily: 'lato' }}
-                          onMouseOver={(e) => (e.target.style.textDecoration = 'underline')}
-                          onMouseOut={(e) => (e.target.style.textDecoration = 'none')}
-                        >
+              to="/register"
+              style={{ color: COLORS.primary, fontWeight: 'bold', textDecoration: 'none', fontFamily: 'lato' }}
+              onMouseOver={(e) => (e.target.style.textDecoration = 'underline')}
+              onMouseOut={(e) => (e.target.style.textDecoration = 'none')}
+            >
               inscrivez-vous ici
             </Link>
           </Typography>
         </Box>
-
       </Paper>
-
-      {/* Global style for the animation (optionnel) */}
-      <style>
-        {`
-          @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-          }
-        `}
-      </style>
     </Box>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   useTheme,
@@ -18,32 +18,34 @@ const ChatInput = ({ onSend, onReset }) => {
   const [message, setMessage] = React.useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();  // Hook pour redirection
-  const resetBDD = useSelector(state => state.files.reset);  // adapte le nom du slice
-  const { isLoading, isError, isSuccess } = resetBDD;
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  const { isLoadingreset, isErrorreset, isSuccessreset } = useSelector(state => state.files);
+
 
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
-  useEffect(() => {
-    if (isSuccess) {
-      // Redirection après 3 secondes
-      setTimeout(() => {
-          navigate('/uploadfiles');
-        }, 500);
-      }
-    }, [isSuccess, navigate, files]);
-
-    // Gestion du click sur "Réinitialiser"
     const handleReset = async () => {
-      try {
-        await dispatch(reset());  // unwrap pour gérer erreurs si besoin
-        // Si succès, rediriger vers la page d'upload
-        navigate('/uploadfiles');
-      } catch (error) {
-        console.error("Erreur lors de la réinitialisation :", error);
-        // tu peux aussi afficher un message d'erreur utilisateur
-      }
-    };
+        try {
+          await dispatch(reset()); // Appel API
+          setShouldRedirect(true); // Marquer pour redirection après succès
+        } catch (error) {
+          console.error("Erreur lors de la réinitialisation :", error);
+        }
+      };
+
+      useEffect(() => {
+        if (isSuccessreset && shouldRedirect) {
+          localStorage.setItem("uploadDone", "false");
+
+          setTimeout(() => {
+           window.location.reload()
+          }, 500);
+        }
+      }, [isSuccessreset, shouldRedirect, navigate]);
+
+
+
   
 
   const handleSend = () => {

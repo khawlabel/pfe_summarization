@@ -63,7 +63,6 @@ class LoginRequest(BaseModel):
     password: str
 
 class ChatRequest(BaseModel):
-    user_id: str
     user_input: str
 
 
@@ -240,6 +239,8 @@ async def start():
     app.state.chain_chat=chain_chat
     app.state.user_histories = {}  # <- Ajout ici
     app.state.upload_files={}
+    app.state.resume_fr=""
+    app.state.titre_fr=""
 
 
 @app.post("/upload_and_store_file")
@@ -311,9 +312,10 @@ async def upload_and_store_file(
         "results": results
     })
 
+
 @app.post("/chat")
 async def chat_stream(data: ChatRequest):
-    user_id = data.user_id
+    user_id = "123"
     user_input = data.user_input
 
     # Initialiser historique utilisateur s'il n'existe pas
@@ -341,14 +343,14 @@ async def chat_stream(data: ChatRequest):
         }):
             if chunk:
                 full_response += chunk
-                yield f"data: {chunk}\n\n"
+                yield chunk
         # Enregistrement de la réponse complète dans l'historique
         app.state.user_histories[user_id].append({"role": "assistant", "content": full_response})
-        yield "data: [END]\n\n"
 
     return StreamingResponse(generate_stream(), media_type="text/event-stream")
 
-@app.post("/reset")
+
+@app.get("/reset")
 async def reset_app_state():
     # Suppression de tous les points dans Qdrant
     app.state.client.delete(
@@ -362,8 +364,12 @@ async def reset_app_state():
     app.state.resumes_per_file = []
     app.state.titles_per_file = ""
     app.state.summary_text = {"fr": "", "ar": ""}
+    app.state.upload_files={}
+    app.state.resume_fr=""
+    app.state.titre_fr=""
     
     return {"status": "reset complete"}
+
 
 @app.get("/generate_summary_fr")
 async def generate_summary_stream():
@@ -399,33 +405,39 @@ async def generate_summary_stream():
     app.state.support_summaries["summary"] = resume
 
     def full_stream():
+        complete_resume = ""
         for chunk in app.state.chain_resumer_support.stream(app.state.support_summaries):
-            yield chunk 
+            complete_resume += chunk
+            yield chunk
+        app.state.resume_fr=complete_resume
     return StreamingResponse(full_stream(), media_type="text/event-stream")
 
 @app.get("/generate_titre_fr")
 async def generate_titre_stream():
+    
     all_resumes = "\n\n".join(app.state.resumes_per_file)
     def full_stream():
+        complete_titre= ""
         for chunk in app.state.chain_titre_general.stream({"context": all_resumes, "language": "francais"}):
+            complete_titre += chunk
+            yield chunk 
+        app.state.titre_fr=complete_titre     
+    return StreamingResponse(full_stream(), media_type="text/event-stream")
+
+
+@app.get("/generate_summary_ar")
+async def generate_titre_stream():
+    def full_stream():
+        for chunk in app.state.chain_traduction.stream({"resume_francais": app.state.resume_fr}):
             yield chunk 
     return StreamingResponse(full_stream(), media_type="text/event-stream")
 
 
-@app.get("/generate_t_fr")
+@app.get("/generate_titre_ar")
 async def generate_titre_stream():
-    all_resumes = "\n\n".join(app.state.resumes_per_file)
-    def full_stream():
-        for chunk in app.state.chain_titre_general.stream({"context": all_resumes, "language": "francais"}):
-            yield chunk 
-    return StreamingResponse(full_stream(), media_type="text/event-stream")
 
-
-@app.get("/generate_titre_fr")
-async def generate_titre_stream():
-    all_resumes = "\n\n".join(app.state.resumes_per_file)
     def full_stream():
-        for chunk in app.state.chain_titre_general.stream({"context": all_resumes, "language": "francais"}):
+        for chunk in app.state.chain_traduction.stream({"resume_francais": app.state.titre_fr}):
             yield chunk 
     return StreamingResponse(full_stream(), media_type="text/event-stream")
 
@@ -478,8 +490,8 @@ def verify_email(token: str):
     conn.close()
 
     return {"message": "Email vérifié avec succès."}
-
-
+"""
+"""
 @app.post("/login")
 def login(request: LoginRequest):
     print(request)

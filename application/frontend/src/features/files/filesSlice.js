@@ -16,10 +16,14 @@ const initialState = {
   reset:null,
   files:null,
   uploadefiles: "",
-  isError: false,
-  isLoading: false,
-  isSuccess: false,
-  message: "",
+  isErroruploadefiles: false,
+  isLoadinguploadefiles: false,
+  isSuccessuploadefiles: false,
+  messageuploadefiles: "",
+  isErroruploadereset: false,
+  isLoadinguploadereset: false,
+  isSuccessuploadereset: false,
+  messageuploadereset: "",
 };
 
 
@@ -28,21 +32,6 @@ export const uploadfiles = createAsyncThunk(
   async (files, thunkAPI) => {
     try {
       return await filesService.uploadfiles(files);
-    } catch (error) {
-      const message =
-        error.response?.data?.error || // <-- pour FastAPI
-        error.response?.data?.detail ||
-        error.message;
-      return thunkAPI.rejectWithValue(message);
-    }
-  }
-);
-
-export const generate_summary = createAsyncThunk(
-  "files/generate_summary",
-  async (files, thunkAPI) => {
-    try {
-      return await filesService.generate_summary(files);
     } catch (error) {
       const message =
         error.response?.data?.error || // <-- pour FastAPI
@@ -85,58 +74,40 @@ export const filesSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(uploadfiles.pending, (state) => {
-        state.isLoading = true;
+        state.isLoadinguploadefiles = true;
       })
       .addCase(uploadfiles.fulfilled, (state, action) => {
-        state.isError = false;
-        state.isLoading = false;
-        state.isSuccess = true;
+        state.isErroruploadefiles = false;
+        state.isLoadinguploadefiles = false;
+        state.isSuccessuploadefiles = true;
         state.uploadefiles = action.payload;
-        state.message = "success";
+        state.messageuploadefiles = "success";
       })
       .addCase(uploadfiles.rejected, (state, action) => {
-        state.isError = true;
-        state.isLoading = false;
-        state.isSuccess = false;
-        state.message = action.payload || action.error.message;
-      })
-      .addCase(generate_summary.pending, (state) => {
-        state.isLoading = true;
-      })
-      .addCase(generate_summary.fulfilled, (state, action) => {
-        state.isError = false;
-        state.isLoading = false;
-        state.isSuccess = true;
-        state.generate_summary = action.payload;
-        state.message = "success";
-      })
-      .addCase(generate_summary.rejected, (state, action) => {
-        state.isError = true;
-        state.isLoading = false;
-        state.isSuccess = false;
-        state.message = action.payload || action.error.message;
+        state.isErroruploadefiles = true;
+        state.isLoadinguploadefiles = false;
+        state.isSuccessuploadefiles = false;
+        state.messageuploadefiles = action.payload || action.error.message;
       })
       .addCase(reset.pending, (state) => {
-        state.isLoading = true;
+        state.isLoadingreset = true;
       })
       .addCase(reset.fulfilled, (state, action) => {
-        state.isError = false;
-        state.isLoading = false;
-        state.isSuccess = true;
-        state.reset = action.payload;
-        state.message = "success";
+        state.isErrorreset = false;
+        state.isLoadingreset = false;
+        state.isSuccessreset = true;
+        state.resetreset = action.payload;
+        state.messagereset = "success";
       })
       .addCase(reset.rejected, (state, action) => {
-        state.isError = true;
-        state.isLoading = false;
-        state.isSuccess = false;
-        state.message = action.payload || action.error.message;
+        state.isErrorreset = true;
+        state.isLoadingreset = false;
+        state.isSuccessreset = false;
+        state.messagereset = action.payload || action.error.message;
       })
       .addCase(resetState, (state) => {
         return {
           ...state,
-          uploadefiles:"",
-          generate_summary:null,
         };
       });
   },

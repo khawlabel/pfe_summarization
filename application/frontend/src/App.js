@@ -39,22 +39,68 @@ function App() {
 
               <Route path="/" element={<Home />} />
               
-              <Route path="/login" element= {localStorage.getItem("user")  ? (
-               <Navigate to="/" />
-               ) : (
-                 <Login/>
-               )
-             }/>
+              <Route
+              path="/login"
+              element={
+                localStorage.getItem("user") ? (
+                  localStorage.getItem("uploadDone") === "true" ? (
+                    <Navigate to="/mainpage" />
+                  ) : (
+                    <Navigate to="/uploadfiles" />
+                  )
+                ) : (
+                  <Login />
+                )
+              }
+            />
 
-              <Route path="/register" element={localStorage.getItem("user")  ? (
-               <Navigate to="/" />
-               ) : (
-                 <Register/>
-               )
-             }/>
-              <Route path="/uploadfiles" element={localStorage.getItem("user")  ? (<UploadFiles/>)  : (<Navigate to="/login" />)}/>
-              <Route path="/mainpage" element={localStorage.getItem("user")  ? (<MainPage onThemeChange={toggleTheme}/>) : (<Navigate to="/login" />)}/>
-              <Route path="/verify-email/:token" element={<Verification/>} />
+            <Route
+              path="/register"
+              element={
+                localStorage.getItem("user") ? (
+                  localStorage.getItem("uploadDone") === "true" ? (
+                    <Navigate to="/mainpage" />
+                  ) : (
+                    <Navigate to="/uploadfiles" />
+                  )
+                ) : (
+                  <Register />
+                )
+              }
+            />
+
+            <Route
+              path="/uploadfiles"
+              element={
+                localStorage.getItem("user") ? (
+                  localStorage.getItem("uploadDone") === "true" ? (
+                    <Navigate to="/mainpage" />
+                  ) : (
+                    <UploadFiles />
+                  )
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
+            />
+
+            <Route
+              path="/mainpage"
+              element={
+                localStorage.getItem("user") ? (
+                  localStorage.getItem("uploadDone") === "true" ? (
+                    <MainPage />
+                  ) : (
+                    <Navigate to="/uploadfiles" />
+                  )
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
+            />
+
+            <Route path="/verify-email/:token" element={<Verification />} />
+
     </Routes>
     </BrowserRouter>
     </Provider>

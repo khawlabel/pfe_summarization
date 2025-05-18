@@ -2,7 +2,7 @@
 import {TextField, Button, Box, Typography, Paper } from '@mui/material';
 import { useFormik } from 'formik';
 import { useDispatch, useSelector } from 'react-redux';
-import { register, reset } from '../features/Auth/authSlice';
+import { register, resetRegister } from '../features/Auth/authSlice';
 import { useNavigate } from 'react-router-dom';
 import * as yup from 'yup'
 import React, { useEffect,useState } from 'react';
@@ -69,17 +69,17 @@ const Register = () => {
 
 
     useEffect(() => {
-      if (auth.isError) {
+      if (auth.isErrorregister ) {
         setShowError(true);
         setShowSuccess(false);
-      } else if (auth.isSuccess) {
+      } else if (auth.isSuccessregister ) {
         setShowSuccess(true);
         setShowError(false);
       } else {
         setShowError(false);
         setShowSuccess(false);
       }
-    }, [auth.isError, auth.isSuccess]);
+    }, [auth.isErrorregister , auth.isSuccessregister ]);
 
 
 
@@ -108,7 +108,8 @@ const Register = () => {
 
       useEffect(() => {
       formik.resetForm();
-      dispatch(reset());  // reset état auth aussi
+      dispatch(resetRegister());
+      
       }, [dispatch]);
 
 
@@ -154,14 +155,14 @@ const Register = () => {
                                     {/* Affichage de l'alerte d'erreur */}
                         {showError && (
                           <Alert severity="error" sx={{ mb: 2, width: '93%' }}>
-                            {auth.message}
+                            {auth.messageregister }
                           </Alert>
                         )}
 
                         {showSuccess && (
                           <Alert severity="success" sx={{ mb: 2, width: '93%' }}>
-                            {typeof auth.message === 'string'
-                              ? auth.message
+                            {typeof auth.messageregister  === 'string'
+                              ? auth.messageregister 
                               : "Inscription réussie. Vérifiez votre e-mail pour activer votre compte."}
                           </Alert>
                         )}

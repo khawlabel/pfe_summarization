@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+
 import {
   AppBar,
   Box,
@@ -16,6 +16,10 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PaletteIcon from '@mui/icons-material/Palette';
+import React, { useEffect,useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
+
 
 const CustomMenuIcon = (props) => (
   <SvgIcon {...props} viewBox="0 0 100 80" width="24" height="24">
@@ -34,7 +38,10 @@ const Navbar = ({ onMenuClick, sidebarOpen, onThemeChange }) => {
   const [themeAnchorEl, setThemeAnchorEl] = useState(null);
   const themeMenuOpen = Boolean(themeAnchorEl);
   const [currentTheme, setCurrentTheme] = useState('light');
-  
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const auth = useSelector((state) => state.auth);
+
   const handleSelectTheme = (mode) => {
     setCurrentTheme(mode);
     onThemeChange(mode);
@@ -61,10 +68,10 @@ const Navbar = ({ onMenuClick, sidebarOpen, onThemeChange }) => {
     alert('Paramètres');
     handleMenuClose();
   };
-
   const handleLogout = () => {
-    alert('Déconnexion');
-    handleMenuClose();
+    localStorage.removeItem("user"); // Supprime l'utilisateur du stockage local  
+    localStorage.removeItem("uploadDone");
+    window.location.reload()
   };
 
   return (

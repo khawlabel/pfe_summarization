@@ -8,7 +8,7 @@ import ChatBotGifSombre from '../images/Chat_bot.gif';
 import Arrow from '../images/arrow (3).png'; // Import de l'image de la flèche
 import BackgroundDescription_clair from '../images/shape_clair.png';
 import BackgroundDescription_sombre from '../images/shape_sombre.png';
-import { uploadfiles,setFiles } from '../features/files/filesSlice';
+import { uploadfiles } from '../features/files/filesSlice';
 import { Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -34,19 +34,21 @@ const UploadFiles = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const upload = useSelector((state) => state.files);
-  const { isLoading, isError, isSuccess, message } = upload;
+  const { isLoadinguploadefiles, isErroruploadefiles, isSuccessuploadefiles, messageuploadefiles } = upload;
   
   const [files, setFiles] = useState([]);
   const [rejectedFiles, setRejectedFiles] = useState([]);
 
       useEffect(() => {
-      if (isSuccess) {
+      if (isSuccessuploadefiles) {
+        // Après upload réussi
+        localStorage.setItem("uploadDone", "true");
         // Redirection après 3 secondes
         setTimeout(() => {
-          navigate('/mainpage');
+          window.location.reload()
         }, 3000);
       }
-    }, [isSuccess, navigate, files]);
+    }, [isSuccessuploadefiles, navigate, files]);
 
   
   const { getRootProps, getInputProps } = useDropzone({
@@ -287,18 +289,18 @@ const UploadFiles = () => {
 
 
 
-              {isLoading ? (
+              {isLoadinguploadefiles ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                <CircularProgress size={32} sx={{ color: '#0d5b53' }} />
 
                 </Box>
-              ) : isSuccess ? (
+              ) : isSuccessuploadefiles ? (
                 <Alert severity="success" sx={{ mt: 3 }}>
                   Fichiers uploadés avec succès !
                 </Alert>
-              ) : isError ? (
+              ) : isErroruploadefiles ? (
                 <Alert severity="error" sx={{ mt: 3 }}>
-                  Erreur lors de l’upload : {message}
+                  Erreur lors de l’upload : {messageuploadefiles}
                 </Alert>
               ) : (
                 <Button
