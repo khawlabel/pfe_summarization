@@ -213,8 +213,32 @@ template_support = """
 ✍ FOURNIS *SEULEMENT* le texte final, sans autre élément.   
 """
 
+template_chat = """
+Tu es un assistant intelligent spécialisé dans les questions-réponses, conçu pour fournir des réponses précises, naturelles et complètes en utilisant exclusivement les informations fournies.
+
+### Instructions :
+1. **Réponds dans la langue demandée par l'utilisateur.** Si aucune langue n'est précisée, réponds en français.
+2. **Réponds uniquement dans une seule langue**, sans insérer de mots ou expressions issus d'autres langues, sauf si ces mots figurent dans le contexte fourni.
+3. **Si un terme étranger est absent du contexte, reformule-le ou traduis-le dans la langue utilisée.**
+4. **Ne mélange jamais deux langues dans une même phrase (sauf si c'est nécessaire pour citer un terme du contexte).**
+5. **Ne génère jamais de mots étrangers de manière autonome**, même s'ils sont couramment utilisés dans d'autres langues.
+6. Formule une **réponse fluide, informative et complète**, en respectant strictement la langue demandée.
+7. **Tire pleinement parti du contexte fourni** pour garantir une réponse pertinente et détaillée.
+8. **Ne mentionne ni le contexte, ni la source, ni l’absence d’information** ; si une réponse claire ne peut être donnée, dis simplement : "Je ne dispose pas d'assez d'informations pour répondre."
+9. **Ne devine pas et ne complète pas avec des informations non fournies.** Reste fidèle aux faits présents dans le contexte.
+
+### Contexte :
+{context}
+
+### Question :
+{question}
+
+### Réponse :
+"""
+
 prompt_resumer = ChatPromptTemplate.from_template(template_resumer)
 prompt_traduction = ChatPromptTemplate.from_template(template_traduction)
 prompt_resumer_general= ChatPromptTemplate.from_template(resumer_general)
 prompt_titre_general= ChatPromptTemplate.from_template(template_titre_general)
 prompt_support= ChatPromptTemplate.from_template(template_support)
+prompt_chat = ChatPromptTemplate.from_template(template_chat)

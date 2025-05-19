@@ -18,7 +18,7 @@ import asyncio
 from outils import *
 from fastapi.responses import StreamingResponse
 from langchain.memory import ConversationBufferMemory
-from prompts_v0_2 import prompt_chat
+from prompts_v0_4 import *
 from qdrant_client.http.models import Filter, FilterSelector
 from fastapi.middleware.cors import CORSMiddleware
 
