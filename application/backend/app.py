@@ -286,7 +286,7 @@ async def upload_and_store_file(
                 "file_name": file_name,
                 "file_type": file_type
             })
-            
+
             app.state.retrieved_contexts.append({
              "contenu":text,
              "file_name":file_name,
@@ -318,6 +318,7 @@ async def upload_and_store_file(
         "user_id": user_id,
         "results": results
     })
+
 
 
 @app.post("/chat")
