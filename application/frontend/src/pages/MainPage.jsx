@@ -57,19 +57,17 @@ async function streamEndpoint(url, onChunk) {
 
 
       try {
-                // 2) une fois le titre complet, ajouter un saut de ligne puis streamer le résumé
-        setFrenchSummary(prev => prev + '\n'); // séparer visuellement
-        await streamEndpoint('http://127.0.0.1:8000/generate_summary_fr', chunk => {
-          setFrenchSummary(prev => prev + chunk);
-        });
-        
         // 1) streamer le titre
         await streamEndpoint('http://127.0.0.1:8000/generate_titre_fr', chunk => {
           setFrenchTitle(prev => prev + chunk);
         });
 
 
-
+        // 2) une fois le titre complet, ajouter un saut de ligne puis streamer le résumé
+        setFrenchSummary(prev => prev + '\n'); // séparer visuellement
+        await streamEndpoint('http://127.0.0.1:8000/generate_summary_fr', chunk => {
+          setFrenchSummary(prev => prev + chunk);
+        });
 
         await streamEndpoint('http://127.0.0.1:8000/generate_titre_ar', chunk => {
           setArabicTitle(prev => prev + chunk);

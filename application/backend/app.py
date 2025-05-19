@@ -378,27 +378,8 @@ async def reset_app_state():
 
 @app.get("/generate_summary_fr")
 async def generate_summary_stream():
+        
     uploaded_files=app.state.upload_files
-    if not uploaded_files:
-        return JSONResponse(status_code=400, content={"error": "Aucun fichier reçu."})
-
-    query = "Fais un résumé clair et structuré des informations disponibles."
-    app.state.retrieved_contexts.clear()
-    app.state.resumes_per_file.clear()
-
-
-    resumes_temp = []
-    # Extraction et résumé fichier par fichier
-    for file in uploaded_files:
-        context = retrieve_context_with_metadata_file(query, file_name=file.filename, length=len(uploaded_files))
-        app.state.retrieved_contexts.append(context)
-
-        resume_piece = ""
-        resume_piece=app.state.chain_resumer.invoke({"context": context, "language": "francais"})
-            
-        resumes_temp.append(resume_piece)
-
-    app.state.resumes_per_file = resumes_temp    
 
     all_resumes = "\n\n".join(app.state.resumes_per_file)
 
@@ -425,11 +406,30 @@ async def generate_summary_stream():
 @app.get("/generate_titre_fr")
 
 async def generate_titre_stream():
-    # ⏳ Attend indéfiniment (ou longtemps) que les résumés soient prêts
-    while not app.state.resumes_per_file:
-        await asyncio.sleep(0.5)  # vérifie toutes les 500 ms
 
-    all_resumes = "\n\n".join(app.state.resumes_per_file)
+    uploaded_files=app.state.upload_files
+    if not uploaded_files:
+        return JSONResponse(status_code=400, content={"error": "Aucun fichier reçu."})
+
+    query = "Fais un résumé clair et structuré des informations disponibles."
+    app.state.retrieved_contexts.clear()
+    app.state.resumes_per_file.clear()
+
+
+    resumes_temp = []
+    # Extraction et résumé fichier par fichier
+    for file in uploaded_files:
+        context = retrieve_context_with_metadata_file(query, file_name=file.filename, length=len(uploaded_files))
+        app.state.retrieved_contexts.append(context)
+
+        resume_piece = ""
+        resume_piece=app.state.chain_resumer.invoke({"context": context, "language": "francais"})
+            
+        resumes_temp.append(resume_piece)
+
+    app.state.resumes_per_file = resumes_temp
+
+    all_resumes = "\n\n".join(resumes_temp)
 
     def full_stream():
         complete_titre = ""
