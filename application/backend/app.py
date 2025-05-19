@@ -421,22 +421,33 @@ async def generate_summary_stream():
         app.state.resume_fr=complete_resume
     return StreamingResponse(full_stream(), media_type="text/event-stream")
 
+
 @app.get("/generate_titre_fr")
+
 async def generate_titre_stream():
-    
+    # ⏳ Attend indéfiniment (ou longtemps) que les résumés soient prêts
+    while not app.state.resumes_per_file:
+        await asyncio.sleep(0.5)  # vérifie toutes les 500 ms
+
     all_resumes = "\n\n".join(app.state.resumes_per_file)
+
     def full_stream():
-        complete_titre= ""
+        complete_titre = ""
         for chunk in app.state.chain_titre_general.stream({"context": all_resumes, "language": "francais"}):
             complete_titre += chunk
-            yield chunk 
-        app.state.titre_fr=complete_titre   
-    print(app.state.titre_fr)      
+            yield chunk
+        app.state.titre_fr = complete_titre
+
     return StreamingResponse(full_stream(), media_type="text/event-stream")
+
 
 
 @app.get("/generate_summary_ar")
 async def generate_titre_stream():
+
+    while not app.state.resume_fr:
+        await asyncio.sleep(0.5)  # vérifie toutes les 500 ms
+
     def full_stream():
         for chunk in app.state.chain_traduction.stream({"resume_francais": app.state.resume_fr}):
             yield chunk 
@@ -445,6 +456,9 @@ async def generate_titre_stream():
 
 @app.get("/generate_titre_ar")
 async def generate_titre_stream():
+
+    while not app.state.titre_fr:
+        await asyncio.sleep(0.5)  # vérifie toutes les 500 ms
 
     def full_stream():
         for chunk in app.state.chain_traduction.stream({"resume_francais": app.state.titre_fr}):
