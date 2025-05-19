@@ -40,7 +40,6 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
   const open = Boolean(anchorEl);
   const [themeAnchorEl, setThemeAnchorEl] = useState(null);
   const themeMenuOpen = Boolean(themeAnchorEl);
-  const [currentTheme, setCurrentTheme] = useState('dark');
   
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -71,6 +70,7 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
   const handleLogout = () => {
     localStorage.removeItem("user"); // Supprime l'utilisateur du stockage local  
     localStorage.removeItem("uploadDone");
+    localStorage.removeItem("theme"); // Supprime le thème enregistré
     window.location.reload()
   };
 
@@ -225,20 +225,30 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
               },
             }}
           >
-            <MenuItem
-               onClick={toggleTheme}
-              selected={currentTheme === 'light'}
+          <MenuItem
+              onClick={() => {
+                if (mode !== 'light') {
+                  toggleTheme();
+                }
+              }}
+              selected={mode === 'light'}
               sx={{ borderRadius: 2 }}
             >
               🌞 Mode clair
             </MenuItem>
+
             <MenuItem
-               onClick={toggleTheme}
-              selected={currentTheme === 'dark'}
+              onClick={() => {
+                if (mode !== 'dark') {
+                  toggleTheme();
+                }
+              }}
+              selected={mode === 'dark'}
               sx={{ borderRadius: 2 }}
             >
               🌙 Mode sombre
             </MenuItem>
+
           </Menu>
         </Box>
       </Toolbar>
