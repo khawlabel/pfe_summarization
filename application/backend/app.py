@@ -157,7 +157,7 @@ L'équipe Support
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender_email, password)
             server.sendmail(sender_email, receiver_email, message.as_string())
-            print("Email envoyé avec succès!")
+
     except Exception as e:
         print(f"Erreur lors de l'envoi de l'email: {e}")
         raise HTTPException(status_code=500, detail="Échec de l'envoi de l'email.")
@@ -203,7 +203,6 @@ async def start():
     for idx, point in enumerate(scroll_result[0]):
         key = f"support_summary_{idx+1}"
         support_summaries[key] = point.payload.get("page_content", "")  # "summary" ou le champ correct
-        print(f"{key} : {support_summaries[key]}")
     app.state.support_summaries=support_summaries
 
 
@@ -248,7 +247,6 @@ async def upload_and_store_file(
     file: List[UploadFile] = File(...),
     user_id: Optional[str] = Form(None)
 ):
-    print(file)
     app.state.upload_files=file
     if user_id is None:
         user_id = uuid.uuid4().hex
@@ -260,7 +258,6 @@ async def upload_and_store_file(
 
     for f in file:
         try:
-            print(f.filename)
             suffix = os.path.splitext(f.filename)[1]
             file_type = suffix.lstrip(".")
             file_name = f.filename
@@ -293,7 +290,6 @@ async def upload_and_store_file(
              "file_type":file_type
 
             })
-            print("retrieved_contexts upload", app.state.retrieved_contexts)
 
             results.append({"file_name": file_name, "message": "✅ Fichier traité avec succès."})
 
@@ -342,7 +338,6 @@ async def chat_stream(data: ChatRequest):
     ])
 
     context = app.state.retrieved_contexts
-    print("retrieved_contexts chat", context)
 
     # Fonction de génération en streaming
     def generate_stream():
@@ -504,7 +499,6 @@ def verify_email(token: str):
 """
 @app.post("/login")
 def login(request: LoginRequest):
-    print(request)
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
