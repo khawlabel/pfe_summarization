@@ -404,7 +404,6 @@ async def generate_summary_stream():
 
 
 @app.get("/generate_titre_fr")
-
 async def generate_titre_stream():
 
     uploaded_files=app.state.upload_files

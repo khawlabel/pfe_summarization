@@ -47,47 +47,51 @@ async function streamEndpoint(url, onChunk) {
 }
 
 
-  useEffect(() => {
-    const fetchAll = async () => {
-      setIsGenerating(true);
-      setFrenchTitle('');
-      setFrenchSummary('');
-      setArabicTitle('');
-      setArabicSummary('');
+useEffect(() => {
+  let cancelled = false;
 
+  const fetchAll = async () => {
+    if (cancelled) return;
+    setIsGenerating(true);
+    setFrenchTitle('');
+    setFrenchSummary('');
+    setArabicTitle('');
+    setArabicSummary('');
 
-      try {
-        // 1) streamer le titre
-        await streamEndpoint('http://127.0.0.1:8000/generate_titre_fr', chunk => {
-          setFrenchTitle(prev => prev + chunk);
-        });
+    try {
+      await streamEndpoint('http://127.0.0.1:8000/generate_titre_fr', chunk => {
+        if (!cancelled) setFrenchTitle(prev => prev + chunk);
+      });
 
+      if (!cancelled) setFrenchSummary(prev => prev + '\n');
 
-        // 2) une fois le titre complet, ajouter un saut de ligne puis streamer le résumé
-        setFrenchSummary(prev => prev + '\n'); // séparer visuellement
-        await streamEndpoint('http://127.0.0.1:8000/generate_summary_fr', chunk => {
-          setFrenchSummary(prev => prev + chunk);
-        });
+      await streamEndpoint('http://127.0.0.1:8000/generate_summary_fr', chunk => {
+        if (!cancelled) setFrenchSummary(prev => prev + chunk);
+      });
 
-        await streamEndpoint('http://127.0.0.1:8000/generate_titre_ar', chunk => {
-          setArabicTitle(prev => prev + chunk);
-        });
-                // 2) une fois le titre complet, ajouter un saut de ligne puis streamer le résumé
-        setArabicSummary(prev => prev + '\n'); // séparer visuellement
-        await streamEndpoint('http://127.0.0.1:8000/generate_summary_ar', chunk => {
-          setArabicSummary(prev => prev + chunk);
-        });
+      await streamEndpoint('http://127.0.0.1:8000/generate_titre_ar', chunk => {
+        if (!cancelled) setArabicTitle(prev => prev + chunk);
+      });
 
+      if (!cancelled) setArabicSummary(prev => prev + '\n');
 
-      } catch (err) {
-        console.error('Erreur de streaming :', err);
-      } finally {
-        setIsGenerating(false);
-      }
-    };
+      await streamEndpoint('http://127.0.0.1:8000/generate_summary_ar', chunk => {
+        if (!cancelled) setArabicSummary(prev => prev + chunk);
+      });
 
-    fetchAll();
-  }, []); // ou [filesRedux] si tu veux relancer à chaque changement de fichiers
+    } catch (err) {
+      if (!cancelled) console.error('Erreur de streaming :', err);
+    } finally {
+      if (!cancelled) setIsGenerating(false);
+    }
+  };
+
+  fetchAll();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);
 
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -122,34 +126,25 @@ async function streamEndpoint(url, onChunk) {
   }, []);
 
 const handleSend = (msg) => {
-  // Ajouter le message user immédiatement
-  const newMessages = [...messages, { from: 'user', text: msg }];
-  setMessages(newMessages);
+  const userMessage = { from: 'user', text: msg };
+  const botPlaceholder = { from: 'bot', text: '' };
 
-  // Préparer un message bot vide à mettre à jour au fur et à mesure
-  setMessages((prev) => [
-    ...prev,
-    { from: 'bot', text: '' },
-  ]);
+  // Ajouter immédiatement le message utilisateur et un message bot vide
+  setMessages((prev) => [...prev, userMessage, botPlaceholder]);
 
-  // On récupère l'index du dernier message bot (celui vide qu'on vient d'ajouter)
-  const botMessageIndex = newMessages.length;
-  setIsResponding(true); // <- Commence la réponse
-
-  // Comme EventSource ne supporte pas POST, on fera avec fetch + ReadableStream (plus flexible)
+  // L'index du message bot sera le dernier après ajout
+  const botMessageIndex = messages.length + 1;
+  setIsResponding(true);
 
   fetch('http://localhost:8000/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      user_input: msg,
-    }),
+    body: JSON.stringify({ user_input: msg }),
   }).then(response => {
-    if (!response.body) {
-      throw new Error('ReadableStream not supported');
-    }
+    if (!response.body) throw new Error('ReadableStream not supported');
+
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let botResponse = '';
@@ -157,40 +152,43 @@ const handleSend = (msg) => {
     function read() {
       reader.read().then(({ done, value }) => {
         if (done) {
-          // Fin du stream, mettre à jour le message complet
+          // Fin du stream : forcer la dernière mise à jour
           setMessages((prev) => {
             const updated = [...prev];
-            updated[botMessageIndex] = { from: 'bot', text: botResponse };
+            if (updated[botMessageIndex]) {
+              updated[botMessageIndex].text = botResponse;
+            }
             return updated;
           });
-          setIsResponding(false); // <- Fin de réponse
+          setIsResponding(false);
           return;
         }
-        // Décoder le chunk reçu
-        const chunk = decoder.decode(value);
-        botResponse += chunk;
 
-        // Mettre à jour le message bot en streaming
+        botResponse += decoder.decode(value, { stream: true });
+
+        // Mise à jour partielle
         setMessages((prev) => {
           const updated = [...prev];
-          updated[botMessageIndex] = { from: 'bot', text: botResponse };
+          if (updated[botMessageIndex]) {
+            updated[botMessageIndex].text = botResponse;
+          }
           return updated;
         });
+
         read();
+      }).catch((error) => {
+        console.error('Erreur pendant le streaming :', error);
+        setIsResponding(false);
       });
     }
+
     read();
-  }).catch(err => {
-    // Gérer erreurs fetch
-    setMessages((prev) => [
-      ...prev,
-      { from: 'bot', text: "Erreur lors de la connexion au serveur." },
-    ]);
-    setIsResponding(false); // <- En cas d'erreur aussi
-    console.error(err);
+  }).catch((err) => {
+    console.error('Erreur de requête :', err);
+    setMessages((prev) => [...prev, { from: 'bot', text: "Erreur de connexion au serveur." }]);
+    setIsResponding(false);
   });
 };
-
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: isDarkMode ? theme.palette.background.default : '#f0f4f8' }}>
