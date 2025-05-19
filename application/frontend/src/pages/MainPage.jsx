@@ -134,15 +134,6 @@ const handleSend = (msg) => {
   const botMessageIndex = newMessages.length;
   setIsResponding(true); // <- Commence la réponse
 
-
-  // Créer un EventSource vers le backend
-  const eventSource = new EventSource('http://localhost:8000/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    // EventSource ne supporte pas POST nativement, donc il faudra utiliser fetch avec ReadableStream à la place
-  });
-
-  
   // Comme EventSource ne supporte pas POST, on fera avec fetch + ReadableStream (plus flexible)
 
   fetch('http://localhost:8000/chat', {
