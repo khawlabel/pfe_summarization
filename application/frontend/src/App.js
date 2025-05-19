@@ -25,10 +25,9 @@ function App() {
     <CustomThemeProvider>
      <Provider store={store}>
     <BrowserRouter>
-    <Routes>
+    <Routes>       
+              <Route path="/" element={<Navigate to="/login" />} />
 
-              <Route path="/" element={<Home />} />
-              
               <Route
               path="/login"
               element={
