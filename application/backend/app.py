@@ -211,15 +211,15 @@ async def start():
 
     # 📌 Chaînes de traitement
 
-    chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm | StrOutputParser())
-    chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
-    chain_traduction  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction | llm2| StrOutputParser())
-    chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm | StrOutputParser())
-    chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm | StrOutputParser())
+    chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm2 | StrOutputParser())
+    chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm2 | StrOutputParser())
+    chain_traduction  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction | llm2 | StrOutputParser())
+    chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm2 | StrOutputParser())
+    chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm2 | StrOutputParser())
     chain_resumer_support=({"summary": itemgetter("summary"),
             "support_summary_1":itemgetter("support_summary_1"),      
             "support_summary_2":itemgetter("support_summary_2"),   
-            "support_summary_3":itemgetter("support_summary_3"),    } | prompt_support | llm | StrOutputParser())
+            "support_summary_3":itemgetter("support_summary_3"),    } | prompt_support | llm2 | StrOutputParser())
     
 
     app.state.vectorstore = vectorstore
