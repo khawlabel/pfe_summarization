@@ -6,6 +6,7 @@ import {
   IconButton,
   Paper,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -14,7 +15,7 @@ import { useNavigate } from 'react-router-dom';  // si tu utilises react-router
 import { useDispatch, useSelector } from 'react-redux';
 import { reset } from '../features/files/filesSlice';
 
-const ChatInput = ({ onSend, onReset }) => {
+const ChatInput = ({ onSend, onReset ,isResponding}) => {
   const [message, setMessage] = React.useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();  // Hook pour redirection
@@ -80,7 +81,9 @@ const ChatInput = ({ onSend, onReset }) => {
           maxWidth:  { xs: '330px',sm:'530px',md: '670px' ,lg: '780px' },
           padding: '8px 12px',
           borderRadius: '24px',
-          backgroundColor: isDarkMode ? theme.palette.background.paper : '#ffffff',
+          backgroundColor: isDarkMode ? theme.palette.background.paper : '#f9f9f9',
+          '--autofill-bg': isDarkMode ? theme.palette.background.paper : '#f9f9f9', // 💡 variable CSS
+  
         }}
       >
         <Tooltip title="Réinitialiser pour résumer de nouveaux fichiers" arrow placement="top">
@@ -116,13 +119,26 @@ const ChatInput = ({ onSend, onReset }) => {
             sx: {
               paddingLeft: 1,
               fontSize: '1rem',
+                '& input:-webkit-autofill': {
+                   WebkitTextFillColor: isDarkMode ? '#f9f9f9' : '#000000',
+                  transition: 'background-color 5000s ease-in-out 0s',
+                },
             },
           }}
         />
 
-        <IconButton onClick={handleSend} sx={{ color: isDarkMode ? '#80cbc4' : '#1B998B', }}>
-          <SendIcon />
-        </IconButton>
+        <IconButton
+            onClick={!isResponding ? handleSend : null}
+            disabled={isResponding}
+            sx={{ color: isDarkMode ? '#1B998B' : '#1B998B' }}
+          >
+            {isResponding ? (
+              <CircularProgress size={25} sx={{  color: isDarkMode ? '#1B998B' : '#1B998B' }}/>
+            ) : (
+              <SendIcon />
+            )}
+          </IconButton>
+
       </Paper>
     </Box>
   );

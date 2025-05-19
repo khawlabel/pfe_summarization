@@ -5,6 +5,7 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 
 const Sidebar = ({ open, onClose }) => {
   const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const primaryColor = '#1B998B';

@@ -13,10 +13,16 @@ import { Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import CircularProgress from '@mui/material/CircularProgress';
+import Navbar from '../components/NavbarUploadFiles';
+import { ThemeContext } from '../ThemeContext'; // ajuste le chemin
+import { useContext } from 'react';
+
 
 
 const UploadFiles = () => {
-   const theme = useTheme();
+  const { mode, toggleTheme } = useContext(ThemeContext);
+
+  const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const getColors = (isDarkMode) => ({
         primary: '#1B998B',
@@ -102,12 +108,15 @@ const UploadFiles = () => {
       py: 10,
     }}
   >
+       <Navbar />
+    
     <Box
       sx={{
         display: 'flex',
         flexDirection: 'column',
         width: '100%',
         maxWidth: '1200px',
+        pt: 5,
       }}
     >
       {/* ➤ Ligne 1 : description + gif */}

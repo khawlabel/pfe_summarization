@@ -80,7 +80,7 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
       elevation={0}
       sx={{
         backgroundColor: theme.palette.mode === 'dark'
-                        ? '#1a1a1a' :'#f9f9f9',
+                        ? '#121212' :'#ebf1f8',
         color: theme.palette.primary.main,
         borderBottom: `1px solid ${theme.palette.divider}`,
         zIndex: 1201,
@@ -88,28 +88,7 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
       }}
     >
       <Toolbar sx={{ height: '68px' }}>
-        {!sidebarOpen && (
-          <IconButton
-            edge="start"
-            onClick={onMenuClick}
-            sx={{
-              backgroundColor: theme.palette.primary.main,
-              color:  theme.palette.background.default,
-              borderRadius: '12px',
-              boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
-              mr: 2,
-              mt: 1.5,
-              ml: 1,
-              mb: 1,
-              '&:hover': {
-                backgroundColor: theme.palette.primary.dark,
-              },
-            }}
-          >
-            <CustomMenuIcon />
-          </IconButton>
-        )}
-
+      
         <Typography
           variant="h6"
           sx={{
@@ -226,14 +205,14 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
             }}
           >
             <MenuItem
-               onClick={toggleTheme}
+              onClick={toggleTheme}
               selected={currentTheme === 'light'}
               sx={{ borderRadius: 2 }}
             >
               🌞 Mode clair
             </MenuItem>
             <MenuItem
-               onClick={toggleTheme}
+             onClick={toggleTheme}
               selected={currentTheme === 'dark'}
               sx={{ borderRadius: 2 }}
             >

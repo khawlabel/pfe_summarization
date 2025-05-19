@@ -7,9 +7,14 @@ import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import ReactMarkdown from 'react-markdown';
 import AI from '../images/ai.png';
+import { ThemeContext } from '../ThemeContext'; // ajuste le chemin
+import { useContext } from 'react';
 
 
-const MainPage = ({ onThemeChange }) => {
+
+const MainPage = () => {
+  const { mode, toggleTheme } = useContext(ThemeContext);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isFrenchReady, setIsFrenchReady] = useState(false);
   const [isArabicReady, setIsArabicReady] = useState(false);
@@ -20,6 +25,8 @@ const MainPage = ({ onThemeChange }) => {
   const [arabicitle, setArabicTitle] = useState('');
   const [arabicSummary, setArabicSummary] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isResponding, setIsResponding] = useState(false);
+
 
 
 // helper pour streamer un endpoint text/plain ou event-stream
@@ -125,6 +132,8 @@ const handleSend = (msg) => {
 
   // On récupère l'index du dernier message bot (celui vide qu'on vient d'ajouter)
   const botMessageIndex = newMessages.length;
+  setIsResponding(true); // <- Commence la réponse
+
 
   // Créer un EventSource vers le backend
   const eventSource = new EventSource('http://localhost:8000/chat', {
@@ -160,6 +169,7 @@ const handleSend = (msg) => {
             updated[botMessageIndex] = { from: 'bot', text: botResponse };
             return updated;
           });
+          setIsResponding(false); // <- Fin de réponse
           return;
         }
         // Décoder le chunk reçu
@@ -182,6 +192,7 @@ const handleSend = (msg) => {
       ...prev,
       { from: 'bot', text: "Erreur lors de la connexion au serveur." },
     ]);
+    setIsResponding(false); // <- En cas d'erreur aussi
     console.error(err);
   });
 };
@@ -189,7 +200,7 @@ const handleSend = (msg) => {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: isDarkMode ? theme.palette.background.default : '#f0f4f8' }}>
-      <Navbar onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen} onThemeChange={onThemeChange} />
+      <Navbar onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen}  />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <Box
@@ -197,7 +208,7 @@ const handleSend = (msg) => {
           pr: { xs: 7, md: 13, lg: 22 },
           pl: { xs: 7, md: 13, lg: 22 },
           pb: 20,
-          pt: 10,
+          pt: 13,
           maxWidth: '100%',
           boxSizing: 'border-box',
           transition: 'all 0.3s ease',
@@ -243,7 +254,7 @@ const handleSend = (msg) => {
                   ml: 0.5,
                   verticalAlign: 'middle',
                   position: 'relative',
-                  top: '-8px',
+                  top: '-8.3px',
                 }}
               />
             </Box>
@@ -432,6 +443,8 @@ const handleSend = (msg) => {
         <ChatInput
           onSend={handleSend}
           onReset={() => setMessages([])}
+          isResponding={isResponding}
+
         />
       )}
     </Box>

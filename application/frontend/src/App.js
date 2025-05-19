@@ -10,29 +10,19 @@ import { Provider } from 'react-redux';
 import store from './App/Store';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import './App.css';
+import { CustomThemeProvider } from './ThemeContext'; // ajuste le chemin
+
+
 
 //private route 
 import {checkUserRole} from './routes/Route';
 
 function App() {
-   const [mode, setMode] = useState('light');
-  
-    const theme = useMemo(() => createTheme({
-      palette: {
-        mode,
-        primary: { main: '#1B998B' },
-        secondary: { main: '#f67e7d' },
-      },
-    }), [mode]);
-  
-    const toggleTheme = (newMode) => {
-      setMode(newMode);
-    };
+   
 
   return (
     <>
-    <ThemeProvider theme={theme}>
-          <CssBaseline />
+    <CustomThemeProvider>
      <Provider store={store}>
     <BrowserRouter>
     <Routes>
@@ -89,7 +79,7 @@ function App() {
               element={
                 localStorage.getItem("user") ? (
                   localStorage.getItem("uploadDone") === "true" ? (
-                    <MainPage />
+                    <MainPage  />
                   ) : (
                     <Navigate to="/uploadfiles" />
                   )
@@ -104,7 +94,7 @@ function App() {
     </Routes>
     </BrowserRouter>
     </Provider>
-    </ThemeProvider>
+     </CustomThemeProvider>
     </>
   );
 }
