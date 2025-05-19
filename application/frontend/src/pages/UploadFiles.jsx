@@ -23,7 +23,7 @@ const UploadFiles = () => {
   const { mode, toggleTheme } = useContext(ThemeContext);
 
   const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
+  const isDarkMode = mode === 'dark';
   const getColors = (isDarkMode) => ({
         primary: '#1B998B',
         secondry: isDarkMode ? '#ddd' : '#444',

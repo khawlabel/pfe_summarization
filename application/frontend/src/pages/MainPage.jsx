@@ -89,7 +89,7 @@ const streamEndpoint = async (url, onChunk) => {
 
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
-  const isDarkMode = theme.palette.mode === 'dark';
+  const isDarkMode = mode === 'dark';
   
 
   // Message d'accueil automatique

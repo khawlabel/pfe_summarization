@@ -1,5 +1,6 @@
 import React, { createContext, useState, useMemo } from 'react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 
 export const ThemeContext = createContext();
 
@@ -24,7 +25,8 @@ export const CustomThemeProvider = ({ children }) => {
   return (
     <ThemeContext.Provider value={{ mode, toggleTheme }}>
       <ThemeProvider theme={theme}>
-        {children}
+         <CssBaseline /> {/* Applique les styles globaux selon le thème */}
+          {children}
       </ThemeProvider>
     </ThemeContext.Provider>
   );
