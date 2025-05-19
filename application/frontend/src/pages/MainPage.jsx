@@ -327,13 +327,15 @@ const handleSend = (msg) => {
                   component="div"
                   sx={{
                     fontFamily: 'inherit',
-                    fontSize: '1rem',
+                    fontSize: '1.1rem',        // 👈 Taille de police légèrement augmentée
                     color: theme.palette.mode === 'dark'
                         ? '#f9f9f9' :'#495057',
                     lineHeight: 1.8,
                     direction: 'rtl',
                     textAlign: 'justify',
                     wordBreak: 'break-word',
+                      wordSpacing: '0.12em', // 👈 Ajoute de l’espace entre les mots
+      
                   }}
                   {...props}
                 />
