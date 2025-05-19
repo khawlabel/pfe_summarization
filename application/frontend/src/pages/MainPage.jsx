@@ -22,28 +22,30 @@ const MainPage = () => {
   const [streamingIndex, setStreamingIndex] = useState(null);
   const [frenchSummary, setFrenchSummary] = useState('');
   const [frenchTitle, setFrenchTitle] = useState('');
-  const [arabicitle, setArabicTitle] = useState('');
+  const [arabicTitle, setArabicTitle] = useState('');
   const [arabicSummary, setArabicSummary] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResponding, setIsResponding] = useState(false);
 
 
 
-// helper pour streamer un endpoint text/plain ou event-stream
-const streamEndpoint = async (url, onChunk) => {
-  const res = await fetch(url, { method: 'GET' });
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder('utf-8');
+async function streamEndpoint(url, onChunk) {
+  const response = await fetch(url);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
   let done = false;
+
   while (!done) {
-    const { value, done: d } = await reader.read();
-    done = d;
+    const { value, done: doneReading } = await reader.read();
+    done = doneReading;
     if (value) {
-      const chunk = decoder.decode(value, { stream: true });
+      // IMPORTANT : utiliser stream:true pour gérer les morceaux incomplets correctement
+      const chunk = decoder.decode(value, { stream: !done });
       onChunk(chunk);
     }
   }
-};
+}
+
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -340,7 +342,8 @@ const handleSend = (msg) => {
               ),
             }}
           >
-           { `**العنوان :**\n${arabicitle.trim()}\n\n**الملخص :**\n${arabicSummary.trim()}`}
+           { `**العنوان :**\n${arabicTitle.trim()}\n\n**الملخص :**\n${arabicSummary.trim()}` }
+
 
           </ReactMarkdown>
 

@@ -53,8 +53,10 @@ resumer_general="""
     Résumé (strictement en {language}) :  
 
 """
+
+
 template_titre_general = """  
-Ta tâche est de générer un titre général à partir des différents résumés fournis, en respectant strictement les règles suivantes :  
+Ta tâche est de générer un **titre général unique** à partir des résumés suivants, en respectant strictement les instructions suivant:
 
 ### Contraintes sur le titre général :
 
@@ -103,7 +105,11 @@ Maintenant, applique ces règles aux résumés suivants :
 Résumés :  
 {context}  
 
-Titre général (strictement en {language}) :  
+Tu dois uniquement répondre par le **titre final** sur une seule ligne, **sans ajout d'étiquette**, **sans préfixe** (comme "Titre :" ou "Qui puis Quoi :"), **sans guillemets**, et **sans explication**.  
+Le résultat doit être **uniquement le texte du titre**, **rien d'autre**.  
+
+Titre final en {language} :
+
 """
 
 

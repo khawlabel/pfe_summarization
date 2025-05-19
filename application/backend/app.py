@@ -386,6 +386,8 @@ async def generate_summary_stream():
     app.state.retrieved_contexts.clear()
     app.state.resumes_per_file.clear()
 
+
+    resumes_temp = []
     # Extraction et résumé fichier par fichier
     for file in uploaded_files:
         context = retrieve_context_with_metadata_file(query, file_name=file.filename, length=len(uploaded_files))
@@ -394,7 +396,9 @@ async def generate_summary_stream():
         resume_piece = ""
         resume_piece=app.state.chain_resumer.invoke({"context": context, "language": "francais"})
             
-        app.state.resumes_per_file.append(resume_piece)
+        resumes_temp.append(resume_piece)
+
+    app.state.resumes_per_file = resumes_temp    
 
     all_resumes = "\n\n".join(app.state.resumes_per_file)
 
@@ -426,7 +430,8 @@ async def generate_titre_stream():
         for chunk in app.state.chain_titre_general.stream({"context": all_resumes, "language": "francais"}):
             complete_titre += chunk
             yield chunk 
-        app.state.titre_fr=complete_titre     
+        app.state.titre_fr=complete_titre   
+    print(app.state.titre_fr)      
     return StreamingResponse(full_stream(), media_type="text/event-stream")
 
 
