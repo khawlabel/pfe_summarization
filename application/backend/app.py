@@ -293,6 +293,7 @@ async def upload_and_store_file(
              "file_type":file_type
 
             })
+            print("retrieved_contexts upload", app.state.retrieved_contexts)
 
             results.append({"file_name": file_name, "message": "✅ Fichier traité avec succès."})
 
@@ -341,6 +342,7 @@ async def chat_stream(data: ChatRequest):
     ])
 
     context = app.state.retrieved_contexts
+    print("retrieved_contexts chat", context)
 
     # Fonction de génération en streaming
     def generate_stream():
