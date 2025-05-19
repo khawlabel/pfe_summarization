@@ -78,9 +78,6 @@ const Register = () => {
        }
   }, [auth.isErrorregister, auth.isSuccessregister, dispatch]);
 
-
-
-
    const schema = yup.object().shape({
       firstname: yup.string().required("Ce champ est obligatoire"),
       lastname: yup.string().required("Ce champ est obligatoire"),

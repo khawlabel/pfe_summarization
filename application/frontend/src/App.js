@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import UploadFiles from './pages/UploadFiles';
-import Home from  './pages/Home';
 import MainPage from './pages/MainPage';
 import Verification from './pages/Verification';
 import {BrowserRouter,Routes,Route,Navigate } from "react-router-dom";

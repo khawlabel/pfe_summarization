@@ -91,6 +91,7 @@ const Verification = () => {
           Vous pouvez maintenant accéder à toutes les fonctionnalités.
         </Typography>
 
+
         <Button
           component={RouterLink}  // <-- ici
           variant="contained"
