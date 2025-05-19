@@ -9,6 +9,7 @@ const uploadfiles = async (files) => {
   return response.data;
   };
 
+  
 const reset = async () => {
 
   const response = await axios.get(`${base_url}reset`);

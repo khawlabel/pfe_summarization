@@ -20,6 +20,7 @@ const register = async (user) => {
   return response.data;
 };
 
+
 const verifyCompte = async (token) => {
   
   const response = await axios.get(`${base_url}verify-email/${token}`);

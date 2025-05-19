@@ -10,6 +10,7 @@ const getUserfromLocalStorage = localStorage.getItem("user")
   ? JSON.parse(localStorage.getItem("user"))
   : null;
 
+  
 const initialState = {
   user: getUserfromLocalStorage,
   generate_summary:null,

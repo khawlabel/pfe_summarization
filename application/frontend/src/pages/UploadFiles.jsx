@@ -201,6 +201,7 @@ const UploadFiles = () => {
            src= {isDarkMode ? ChatBotGifSombre : ChatBotGifClair}
              alt="Illustration IA"
             style={{ width: '100%', maxWidth: '320px' }}
+          
           />
         </Box>
       </Box>
