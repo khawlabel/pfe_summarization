@@ -35,10 +35,19 @@ def init_qdrant():
     return client, embedding_model, vectorstore
 
 # Chargement LLM
-def load_llm():
-    return ChatGroq(groq_api_key=GROQ_API_KEY_3, model_name=LLM_NAME_1)
-
+def load_llm1():
+    return ChatGroq(groq_api_key=GROQ_API_KEY_1, model_name=LLM_NAME_4)
 def load_llm2():
+    return ChatGroq(groq_api_key=GROQ_API_KEY_2, model_name=LLM_NAME_4)
+def load_llm3():
     return ChatGroq(groq_api_key=GROQ_API_KEY_3, model_name=LLM_NAME_4)
+def load_llm4():
+    return ChatGroq(groq_api_key=GROQ_API_KEY_4, model_name=LLM_NAME_4)
+def load_llm5():
+    return ChatGroq(groq_api_key=GROQ_API_KEY_5, model_name=LLM_NAME_4)
+def load_llm6():
+    return ChatGroq(groq_api_key=GROQ_API_KEY_6, model_name=LLM_NAME_4)
+def load_llm7():
+    return ChatGroq(groq_api_key=GROQ_API_KEY_7, model_name=LLM_NAME_4)
 
 

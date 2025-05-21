@@ -206,21 +206,27 @@ async def start():
     app.state.support_summaries=support_summaries
 
 
-    llm = load_llm()
+    llm1 = load_llm1()
     llm2=load_llm2()
+    llm3 = load_llm3()
+    llm4=load_llm4()
+    llm5 = load_llm5()
+    llm6=load_llm6()
+    llm7=load_llm7()
+   
 
     # 📌 Chaînes de traitement
 
-    chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm2 | StrOutputParser())
+    chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm1 | StrOutputParser())
     chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm2 | StrOutputParser())
-    chain_traduction_titre  = ({"titre_francais": itemgetter("titre_francais")} | prompt_traduction_titre | llm2 | StrOutputParser())
-    chain_traduction_resume  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction_resume | llm2 | StrOutputParser())
-    chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm2 | StrOutputParser())
-    chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm2 | StrOutputParser())
+    chain_traduction_titre  = ({"titre_francais": itemgetter("titre_francais")} | prompt_traduction_titre | llm3 | StrOutputParser())
+    chain_traduction_resume  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction_resume | llm4 | StrOutputParser())
+    chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm5 | StrOutputParser())
+    chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm6 | StrOutputParser())
     chain_resumer_support=({"summary": itemgetter("summary"),
             "support_summary_1":itemgetter("support_summary_1"),      
             "support_summary_2":itemgetter("support_summary_2"),   
-            "support_summary_3":itemgetter("support_summary_3"),    } | prompt_support | llm2 | StrOutputParser())
+            "support_summary_3":itemgetter("support_summary_3"),    } | prompt_support | llm7 | StrOutputParser())
     
 
     app.state.vectorstore = vectorstore
