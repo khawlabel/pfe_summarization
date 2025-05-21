@@ -53,10 +53,8 @@ resumer_general="""
     Résumé (strictement en {language}) :  
 
 """
-
-
 template_titre_general = """  
-Ta tâche est de générer un **titre général unique** à partir des résumés suivants, en respectant strictement les instructions suivant:
+Ta tâche est de générer un titre général à partir des différents résumés fournis, en respectant strictement les règles suivantes :  
 
 ### Contraintes sur le titre général :
 
@@ -105,11 +103,7 @@ Maintenant, applique ces règles aux résumés suivants :
 Résumés :  
 {context}  
 
-Tu dois uniquement répondre par le **titre final** sur une seule ligne, **sans ajout d'étiquette**, **sans préfixe** (comme "Titre :" ou "Qui puis Quoi :"), **sans guillemets**, et **sans explication**.  
-Le résultat doit être **uniquement le texte du titre**, **rien d'autre**.  
-
-Titre final en {language} :
-
+Titre général (strictement en {language}) :  
 """
 
 
@@ -174,13 +168,24 @@ template_resumer = """
                 """
 
 
-template_traduction =  """
+template_traduction_titre =  """
     Vous êtes un traducteur professionnel. Votre tâche est de traduire le texte ci-dessous du français vers l'arabe. Voici les règles que vous devez suivre pour cette traduction :
     
-    1. *Conservez la structure du texte intacte* : Le titre et le resume.
-    2. *Ne modifiez pas l'ordre du texte* : Assurez-vous que l'ordre des phrases et des idées reste fidèle à l'original.
-    3. *Effectuez uniquement la traduction linguistique* : Votre seul travail est de traduire le texte du français vers l'arabe, sans changer aucun autre aspect du contenu.
-    4. *Veillez à la fluidité et la précision* de la traduction en arabe, en respectant les règles grammaticales et stylistiques de la langue cible.
+   
+    1. *Ne modifiez pas l'ordre du texte* : Assurez-vous que l'ordre des phrases et des idées reste fidèle à l'original.
+    2. *Effectuez uniquement la traduction linguistique* : Votre seul travail est de traduire le texte du français vers l'arabe, sans changer aucun autre aspect du contenu.
+    3. *Veillez à la fluidité et la précision* de la traduction en arabe, en respectant les règles grammaticales et stylistiques de la langue cible.
+
+    Voici le texte à traduire : 
+    {titre_francais}
+    """
+
+template_traduction_resume =  """
+    Vous êtes un traducteur professionnel. Votre tâche est de traduire le texte ci-dessous du français vers l'arabe. Voici les règles que vous devez suivre pour cette traduction :
+    
+    1. *Ne modifiez pas l'ordre du texte* : Assurez-vous que l'ordre des phrases et des idées reste fidèle à l'original.
+    2. *Effectuez uniquement la traduction linguistique* : Votre seul travail est de traduire le texte du français vers l'arabe, sans changer aucun autre aspect du contenu.
+    3. *Veillez à la fluidité et la précision* de la traduction en arabe, en respectant les règles grammaticales et stylistiques de la langue cible.
 
     Voici le texte à traduire : 
     {resume_francais}
@@ -243,7 +248,8 @@ Tu es un assistant intelligent spécialisé dans les questions-réponses, conçu
 """
 
 prompt_resumer = ChatPromptTemplate.from_template(template_resumer)
-prompt_traduction = ChatPromptTemplate.from_template(template_traduction)
+prompt_traduction_titre = ChatPromptTemplate.from_template(template_traduction_titre)
+prompt_traduction_resume = ChatPromptTemplate.from_template(template_traduction_resume)
 prompt_resumer_general= ChatPromptTemplate.from_template(resumer_general)
 prompt_titre_general= ChatPromptTemplate.from_template(template_titre_general)
 prompt_support= ChatPromptTemplate.from_template(template_support)

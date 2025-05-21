@@ -213,7 +213,8 @@ async def start():
 
     chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm2 | StrOutputParser())
     chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm2 | StrOutputParser())
-    chain_traduction  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction | llm2 | StrOutputParser())
+    chain_traduction_titre  = ({"titre_francais": itemgetter("titre_francais")} | prompt_traduction_titre | llm2 | StrOutputParser())
+    chain_traduction_resume  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction_resume | llm2 | StrOutputParser())
     chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm2 | StrOutputParser())
     chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm2 | StrOutputParser())
     chain_resumer_support=({"summary": itemgetter("summary"),
@@ -227,7 +228,8 @@ async def start():
     app.state.client = client 
     app.state.extract_text_func = extract_text 
     app.state.chain_resumer = chain_resumer 
-    app.state.chain_traduction = chain_traduction 
+    app.state.chain_traduction_titre = chain_traduction_titre
+    app.state.chain_traduction_resume = chain_traduction_resume
     app.state.chain_resumer_general = chain_resumer_general 
     app.state.chain_titre_general = chain_titre_general 
     app.state.chain_resumer_support = chain_resumer_support 
@@ -448,7 +450,7 @@ async def generate_titre_stream():
         await asyncio.sleep(0.5)  # vérifie toutes les 500 ms
 
     def full_stream():
-        for chunk in app.state.chain_traduction.stream({"resume_francais": app.state.resume_fr}):
+        for chunk in app.state.chain_traduction_resume.stream({"resume_francais": app.state.resume_fr}):
             yield chunk 
     return StreamingResponse(full_stream(), media_type="text/event-stream")
 
@@ -460,7 +462,7 @@ async def generate_titre_stream():
         await asyncio.sleep(0.5)  # vérifie toutes les 500 ms
 
     def full_stream():
-        for chunk in app.state.chain_traduction.stream({"resume_francais": app.state.titre_fr}):
+        for chunk in app.state.chain_traduction_titre.stream({"titre_francais": app.state.titre_fr}):
             yield chunk 
     return StreamingResponse(full_stream(), media_type="text/event-stream")
 
