@@ -15,7 +15,7 @@ else:
     pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"  # Chemin sous Linux (Streamlit Cloud)
 
 
-client_groq = Groq(api_key=GROQ_API_KEY)
+client_groq = Groq(api_key=GROQ_API_KEY_1)
 
 def preprocess_image(image):
     """Améliorer la lisibilité en appliquant un seuillage et un filtre de netteté."""
