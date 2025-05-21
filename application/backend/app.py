@@ -220,7 +220,7 @@ async def start():
     chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm1 | StrOutputParser())
     chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm2 | StrOutputParser())
     chain_traduction_titre  = ({"titre_francais": itemgetter("titre_francais")} | prompt_traduction_titre | llm3 | StrOutputParser())
-    chain_traduction_resume  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction_resume | llm4 | StrOutputParser())
+    chain_traduction_resume  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction_resume | llm3 | StrOutputParser())
     chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm5 | StrOutputParser())
     chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm6 | StrOutputParser())
     chain_resumer_support=({"summary": itemgetter("summary"),

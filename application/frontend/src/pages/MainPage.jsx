@@ -9,7 +9,7 @@ import ReactMarkdown from 'react-markdown';
 import AI from '../images/ai.png';
 import { ThemeContext } from '../ThemeContext'; // ajuste le chemin
 import { useContext } from 'react';
-
+import {GENERATE_TITRE_FR_URL,GENERATE_SUMMARY_FR_URL,GENERATE_TITRE_AR_URL,GENERATE_SUMMARY_AR_URL,CHAT_URL} from "../routes/constants"
 
 
 const MainPage = () => {
@@ -59,23 +59,23 @@ useEffect(() => {
     setArabicSummary('');
 
     try {
-      await streamEndpoint('http://127.0.0.1:8000/generate_titre_fr', chunk => {
+      await streamEndpoint(GENERATE_TITRE_FR_URL, chunk => {
         if (!cancelled) setFrenchTitle(prev => prev + chunk);
       });
 
       if (!cancelled) setFrenchSummary(prev => prev + '\n');
 
-      await streamEndpoint('http://127.0.0.1:8000/generate_summary_fr', chunk => {
+      await streamEndpoint(GENERATE_SUMMARY_FR_URL, chunk => {
         if (!cancelled) setFrenchSummary(prev => prev + chunk);
       });
 
-      await streamEndpoint('http://127.0.0.1:8000/generate_titre_ar', chunk => {
+      await streamEndpoint(GENERATE_TITRE_AR_URL, chunk => {
         if (!cancelled) setArabicTitle(prev => prev + chunk);
       });
 
       if (!cancelled) setArabicSummary(prev => prev + '\n');
 
-      await streamEndpoint('http://127.0.0.1:8000/generate_summary_ar', chunk => {
+      await streamEndpoint(GENERATE_SUMMARY_AR_URL, chunk => {
         if (!cancelled) setArabicSummary(prev => prev + chunk);
       });
 
@@ -136,7 +136,7 @@ const handleSend = (msg) => {
   const botMessageIndex = messages.length + 1;
   setIsResponding(true);
 
-  fetch('http://localhost:8000/chat', {
+  fetch(CHAT_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

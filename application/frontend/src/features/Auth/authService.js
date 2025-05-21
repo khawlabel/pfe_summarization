@@ -1,10 +1,12 @@
 import axios from "axios";
 import { base_url } from "../../utils/baseUrl";
 import {getAuthConfig} from "../../utils/axiosconfig";
+import {LOGIN_URL,REGISTER_URL,VERIFY_EMAIL_URL} from "../../routes/constants"
 
 const login = async (user) => {
-
-  const response = await axios.post(`${base_url}login`,user,{
+  
+  console.log("login",LOGIN_URL)
+  const response = await axios.post(LOGIN_URL,user,{
   headers: {
     'Content-Type': 'application/json'
   }});
@@ -13,7 +15,7 @@ const login = async (user) => {
   };
 
 const register = async (user) => {
-  const response = await axios.post(`${base_url}register`, user,{
+  const response = await axios.post(REGISTER_URL, user,{
   headers: {
     'Content-Type': 'application/json'
   }});
@@ -23,7 +25,7 @@ const register = async (user) => {
 
 const verifyCompte = async (token) => {
   
-  const response = await axios.get(`${base_url}verify-email/${token}`);
+  const response = await axios.get(`${VERIFY_EMAIL_URL}/${token}`);
   return response.data;
 };
 

@@ -1,10 +1,12 @@
 import axios from "axios";
 import { base_url } from "../../utils/baseUrl";
 import {getAuthConfig} from "../../utils/axiosconfig";
+import {UPLOAD_FILES_URL,RESET_URL} from  "../../routes/constants"
 
 const uploadfiles = async (files) => {
 
-  const response = await axios.post(`${base_url}upload_and_store_file`,files,getAuthConfig());
+  console.log("upload",UPLOAD_FILES_URL)
+  const response = await axios.post(UPLOAD_FILES_URL,files);
 
   return response.data;
   };
@@ -12,7 +14,7 @@ const uploadfiles = async (files) => {
   
 const reset = async () => {
 
-  const response = await axios.get(`${base_url}reset`);
+  const response = await axios.get(RESET_URL);
 
   return response.data;
   };
