@@ -249,6 +249,9 @@ async def start():
     app.state.resume_fr=""
     app.state.titre_fr=""
 
+@app.get("/")
+def read_root():
+    return {"message": "Hello World"}
 
 @app.post("/upload_and_store_file")
 async def upload_and_store_file(
