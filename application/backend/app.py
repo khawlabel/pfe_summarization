@@ -36,7 +36,9 @@ DB_PATH ="users.db"
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000",  # ou l'URL de ton frontend
+    "http://10.0.0.236:3000",
+    "http://localhost:3000",
+    "http://frontend:3000",  # <- à ajouter pour que Docker accepte les requêtes du frontend
 ]
 
 app.add_middleware(
