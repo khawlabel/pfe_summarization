@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import numpy as np
 from pdf2image import convert_from_path
 from groq import Groq
 from constants import *
@@ -8,11 +7,10 @@ import pytesseract
 from langdetect import detect_langs  
 import re
 import platform
+import os
 
-if platform.system() == "Windows":
-    pytesseract.pytesseract.tesseract_cmd = PATH_tesseract
-else:
-    pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"  # Chemin sous Linux (Streamlit Cloud)
+
+pytesseract.pytesseract.tesseract_cmd = PATH_tesseract
 
 
 client_groq = Groq(api_key=GROQ_API_KEY_4)
@@ -27,13 +25,8 @@ def preprocess_image(image):
 
 def detect_language_from_pdf(pdf_path):
     """Extrait 25% du haut de la première page pour détecter la langue."""
-  # ✅ Étape 1 : Convertir le PDF en images haute résolution
-    if platform.system() == "Windows":
-         poppler_path = PATH_poppler
-    else:
-         poppler_path = None  # Sur Streamlit Cloud, pas besoin de spécifier
 
-    images=convert_from_path(pdf_path, poppler_path=poppler_path, dpi=400)
+    images=convert_from_path(pdf_path, poppler_path=PATH_poppler, dpi=400)
 
 
     # On prend uniquement la première page
@@ -73,13 +66,8 @@ def extract_text_from_pdf(pdf_path, lang):
     """Extrait le texte d'un PDF en effectuant une reconnaissance optique (OCR)."""
     extracted_text = []
 
-    # ✅ Étape 1 : Convertir le PDF en images haute résolution
-    if platform.system() == "Windows":
-         poppler_path = PATH_poppler
-    else:
-         poppler_path = None  # Sur Streamlit Cloud, pas besoin de spécifier
 
-    images=convert_from_path(pdf_path, poppler_path=poppler_path, dpi=400)
+    images=convert_from_path(pdf_path, poppler_path=PATH_poppler, dpi=400)
 
     for i, image in enumerate(images):
         # Convertir PIL en OpenCV

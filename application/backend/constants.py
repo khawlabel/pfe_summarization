@@ -1,10 +1,14 @@
 
 import os
 from dotenv import load_dotenv
-
+import platform
 
 # Charger les variables d'environnement
 loaded = load_dotenv()
+
+
+
+
 # Récupérer les clés API de manière sécurisée
 QDRANT_API = os.getenv('QDRANT_API')
 QDRANT_URL = os.getenv('QDRANT_URL')
@@ -34,5 +38,9 @@ MODEL_EMBEDDING="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 MODEL_EMBEDDING_v1="sentence-transformers/all-MiniLM-L6-v2"
 RERANKER_MODEL="BAAI/bge-reranker-v2-m3"
 
-PATH_tesseract = r"C:\Users\Dell\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
-PATH_poppler = "C:/Program Files/poppler-24.08.0/Library/bin"
+if platform.system() == "Windows":
+    PATH_tesseract = r"C:\Users\Dell\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
+    PATH_poppler = "C:/poppler/poppler-24.08.0/Library/bin"
+else:
+    PATH_tesseract = "/usr/bin/tesseract"  # Chemin par défaut dans Docker Linux
+    PATH_poppler = None  # Pas nécessaire sous Linux si `pdf2image` fonctionne
