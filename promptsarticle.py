@@ -63,62 +63,69 @@ template_resumer = """
                     Résumé (strictement en {language}) :  
             """  
 
-template_resumer_general="""
+template_resumer_general = """
+Ta tâche est de produire un **titre général unique** et un **résumé global structuré** à partir du **contexte ci-dessous**, composé de **plusieurs mini-résumés d’articles distincts** avec leurs titres.
 
-Ta tâche est de produire un **titre et un résumé** structuré et informatif, à partir du **contexte fourni** ci-dessous, qui contient plusieurs mini-résumés d'articles avec leurs titres.  
-Tu dois *regrouper les informations essentielles* dans *un unique titre et un unique résumé* sans ajout ni omission.
+🎯 Tu dois regrouper les **informations essentielles issues de *tous les articles*** dans :
+1. **Un seul titre global** synthétisant le contenu dans son ensemble.
+2. **Un seul résumé cohérent**, combinant tous les faits majeurs des différents mini-résumés, sans se concentrer uniquement sur un seul d’entre eux.
 
-    ---
+⛔ Tu ne dois **en aucun cas te limiter à un seul article**, même s’il est plus long ou plus détaillé que les autres.
 
-    ### 🎯 Objectif :
-    Résumer fidèlement les faits en combinant les éléments essentiels des différents articles, *sans interprétation, reformulation excessive ni analyse personnelle, en conservant **tous les faits, chiffres, noms et dates importants*.
+---
 
-    ---
+### 📝 Pour le titre :
+- ✅ Construire un **nouveau titre unique** à partir des **titres et contenus combinés**.
+- ✅ Le titre **doit refléter l’ensemble des sujets abordés**, pas seulement un thème géographique ou technique.
+- ✅ Style **informatif, concis**, sans majuscules superflues ni ponctuation inutile.
+- ✅ Ne pas reprendre un titre existant s’il ne reflète pas tous les éléments.
+- ✅ **Longueur** : 4 à 32 mots (≈ 12 mots recommandé).
+- ✅ **Caractères** : 28 à 220 caractères.
+- ✅ **Structure** : 1 seule phrase.
 
-    ### ⚠ Contraintes de forme OBLIGATOIRES :
-    - ✅ *Longueur* : *entre 100 et 250 mots* (*≈ 190 mots recommandés*).
-    - ✅ *Nombre de caractères* : *entre 1000 et 2000 caractères*.
-    - ✅ *Nombre de phrases* : *3 à 5 phrases* (maximum 10).
-    - ✅ *Un seul paragraphe*, sans puces, sans liste, ni numérotation.
-    - ✅ *Style neutre et journalistique*.
-    - ⛔ *Interdiction d’introductions ou conclusions* ("Résumé :", "En résumé", etc.).
+---
 
-    ---
+### ⚠ Contraintes de forme obligatoires pour le résumé :
+- ✅ Entre **100 et 250 mots** (~190 mots recommandé).
+- ✅ **1000 à 2000 caractères**.
+- ✅ **3 à 5 phrases**, max 10.
+- ✅ **Un seul paragraphe**.
+- ✅ Style **neutre, journalistique, factuel**.
+- ⛔ Ne jamais utiliser “Résumé :”, “En résumé” ou toute forme introductive.
+- ❌ Si les limites sont dépassées ou non atteintes, **réécris la sortie** pour qu’elle soit conforme.
+- 🚫 Aucune tolérance n’est acceptée en dehors des plages définies.
 
-    ### 🧱 Structure logique imposée :
-    Commencer par *[Qui] a annoncé / indiqué, suivi de **[Quoi], **[Quand], **Où, **Comment, **Pourquoi* si disponible.
+---
 
-    Exemple :  
-    *Le ministère de la Santé a annoncé* une hausse de 15 % des dépenses médicales en 2024 à Alger, liée à l’augmentation des besoins hospitaliers.
+### 🧾 Règles de contenu :
+- 🔹 N’ajoute aucune information non présente.
+- 🔹 Utilise les formulations officielles.
+- 🔹 Respecte tous les noms propres, chiffres, institutions, lieux, faits.
+- 🔹 Évite toute redondance ou paraphrase inutile.
+- 🔹 Ne garde que les faits significatifs, fusionne les éléments similaires.
 
-    ---
+---
 
-    ### 🧾 Règles de contenu :
-    - 🔹 *Ne jamais inventer d'informations* non présentes dans le contexte.
-    - 🔹 *Reprendre les termes officiels exactement*.
-    - 🔹 *Respect total des chiffres, des noms propres et des formulations*.
-    - 🔹 Si certains détails sont secondaires ou redondants, *se concentrer sur les faits majeurs*.
+### 💡 Aide à la fusion :
+- 🧩 Identifie **les sujets clés** de chaque mini-résumé.
+- 🧠 **Synthétise-les** de manière fluide et cohérente dans un texte unique.
+- 🛑 **Ne traite pas un seul article comme le sujet principal**, même s’il est long ou détaillé.
 
-    ---
+---
 
-    ### 💡 Astuce pour gérer plusieurs mini-résumés :
-    - Identifier les faits prioritaires de chaque mini-résumé.
-    - Fusionner uniquement les faits importants sans tout détailler.
-    - Ne pas dépasser la longueur maximale.
+Contexte (plusieurs mini-résumés d'articles) :  
+{context}
 
-    ---
+---
 
-    Maintenant, applique les consignes suivantes au contexte ci-dessous.
+⚠ Tu dois estimer la longueur (nombre de mots et de caractères) avant d'afficher le résultat final, et adapter ton résumé si nécessaire.
 
-    Contexte (mini-résumés d'articles) :  
-    {context}
+---
 
-    ---
+**Titre (strictement en {language})** :  
 
-    Résumé (strictement en {language}) :  
-
+**Résumé (strictement en {language})** :  
 """
-
 
 template_chat = """
 Tu es un assistant intelligent spécialisé dans les questions-réponses, conçu pour fournir des réponses précises, naturelles et complètes en utilisant exclusivement les informations fournies.
