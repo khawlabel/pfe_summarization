@@ -2,50 +2,30 @@
 from langchain_core.prompts import ChatPromptTemplate
 
 template_resumer = """  
-                    Ta tâche est de générer un **titre et un résumé** en respectant strictement les règles suivantes :  
+                    Ta tâche est de générer un **titre court** et un **résumé journalistique concis** à partir du contexte suivant. Respecte strictement les règles ci-dessous :  
 
                     ### **Règles générales** :  
                     - **Ne jamais ajouter d'informations extérieures au contexte fourni.**  
                     - **Ne pas analyser ni interpréter les faits.** Fournis uniquement les informations essentielles.  
-                    - **Le résumé doit être direct et informatif, sans liste à puces.**  
-                    - **Respecte le style journalistique** : phrases structurées, neutres et précises.  
+                    - **Le résumé doit être direct et informatif, sans liste à puces.**   
                     - **Ne pas ajouter d’introduction ou de conclusion.**  
                     - **Mentionner les chiffres et faits marquants sans reformulation inutile.**  
-
-                    ### **Règles spécifiques à respecter impérativement :**  
-
-                    1. **Le titre doit être court, factuel et basé uniquement sur le contexte.**  
-                    - **Éviter toute redondance ou ajout de termes inutiles.**  
-
-                    2. **Reprendre les termes du contexte exactement comme ils apparaissent.**  
-                    - **Interdiction stricte de modifier ou reformuler les noms officiels.**  
-                    - **Exemple interdit :** "La ministre des Télécommunications" si le texte mentionne "le ministère".  
-
-                    3. **Ne pas introduire de causes ou justifications non mentionnées.**  
-                    - **Exemple interdit :** Dire que l’augmentation est due à un "programme de développement" si cela n'est pas explicitement écrit.  
-                    - **Exemple interdit :** Ajouter "directives du Président" si cela n’apparaît pas dans le texte source.  
-
-                    4. **Ne jamais ajouter d’explications techniques non présentes.**  
-                    - **Exemple interdit :** "L'innovation a amélioré la vitesse de téléchargement" si cela n'est pas dit.  
-
-                    5. **Respect strict des chiffres et des formulations du contexte.**  
-                    - **Ne pas changer "foyers connectés" en "accès internet"** si ce n'est pas la même unité.  
-                    - **Reprendre exactement les chiffres tels qu’ils apparaissent.**  
+                    - Utilise un style **télégraphique**, direct et concis : va droit au fait, sans détour ni adjectif descriptif inutile.  
+                    - Préfère des phrases courtes, structurées comme un **bulletin d'information**.  
+                    - Exemples de style attendu :  
+                    - « Le match s’est terminé sur un score de 2-1»  
 
                     ---
 
                     ### **Contraintes sur le titre** :  
-                    - **Longueur** : **Entre 4 et 32 mots** (≈ 12 mots en moyenne).  
-                    - **Caractères** : **Entre 28 et 220 caractères** (≈ 74 caractères en moyenne).  
-                    - **Structure** : **1 phrase unique**, claire et informative.  
-                    - **Interdiction** : Pas de reformulation excessive ni d'ajout d'interprétation.  
+                    - Il doit être **court, précis et factuel**, sans effet de style inutile.  
 
                     ### **Contraintes sur le résumé** :  
-                    - **Longueur** : **Entre 9 et 146 mots** (≈ 80 mots en moyenne).  
-                    - **Caractères** : **Entre 59 et 927 caractères** (≈ 550 caractères en moyenne).  
-                    - **Nombre de phrases** : **1 à 3 phrases** en général (**max 8**).  
-                    - **Concision** : Clair, précis, sans analyse ni commentaire subjectif.  
-                    - **Obligation** : Conserver **tous les faits les dates et chiffres essentiels**.  
+                    - **Longueur** : environ **trois phrases** maximum, même si cela représente **moins d’un tiers** du texte original.  
+                    - Il doit rester **concis**, clair, et se concentrer uniquement sur **les faits essentiels** (qui, quoi, quand, où, comment si précisé).  
+                    - **Exclure les détails secondaires ou historiques**, sauf s’ils sont indispensables à la compréhension.  
+                    - **Formule chaque phrase de façon brève et factuelle, comme dans un bulletin de presse : « X est mort à tel endroit », sans détour ni adjectif non essentiel.
+
 
                     ### **Éléments à couvrir implicitement** :  
                     - **Ce qui s'est passé**  
@@ -62,6 +42,9 @@ template_resumer = """
 
                     Résumé (strictement en {language}) :  
             """  
+
+
+
 
 template_resumer_general = """
 Ta tâche est de produire un **titre général unique** et un **résumé global structuré** à partir du **contexte ci-dessous**, composé de **plusieurs mini-résumés d’articles distincts** avec leurs titres.
