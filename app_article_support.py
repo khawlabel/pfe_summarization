@@ -1,0 +1,445 @@
+import streamlit as st
+import tempfile
+import os
+from operator import itemgetter
+from qdrant_client import QdrantClient
+from langchain_groq import ChatGroq
+from qdrant_client.models import VectorParams, Distance
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Qdrant
+from langchain_core.output_parsers import StrOutputParser
+from constants import *
+from outils import extract_text
+from qdrant_client.http.models import Filter, FilterSelector
+from langchain.memory import ConversationBufferMemory
+from langchain.agents import initialize_agent, Tool, AgentType
+from prompts_v0_4 import prompt_traduction,prompt_support
+from promptsarticle import *
+from langchain.prompts import MessagesPlaceholder
+from numpy import dot
+
+
+
+## App-V0-4  ##
+
+# 📌 Interface Streamlit
+st.set_page_config(page_title="🧠 AI Assistant", layout="wide")
+
+# 🔗 Connexion à Qdrant avec mise en cache
+@st.cache_resource
+def get_qdrant_client():
+    return QdrantClient(QDRANT_URL, api_key=QDRANT_API)
+
+client = get_qdrant_client()
+
+@st.cache_resource
+def get_embedding_model():
+    return HuggingFaceEmbeddings(model_name=MODEL_EMBEDDING)
+
+embedding_model = get_embedding_model()
+vector_size = embedding_model.client.get_sentence_embedding_dimension()
+
+if not client.collection_exists(QDRANT_COLLECTION):
+    client.create_collection(
+        collection_name=QDRANT_COLLECTION,
+        vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+    )
+
+vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION, embeddings=embedding_model)
+vectorstore2 = Qdrant(client=client, collection_name=QDRANT_COLLECTION_SUPPORT_2, embeddings=embedding_model)
+
+def embed_text(text):
+    return embedding_model.embed_query(text)
+
+def cosine_similarity(a, b):
+    if len(a) != len(b):
+        return 0.0
+    return dot(a, b)
+
+def search_similar_documents_in_qdrant(contenu_to_summarize, resume_draft, client=client, alpha=0.7, beta=0.3, top_k=2):
+    # Générer les embeddings
+    embedding_contenu = embed_text(contenu_to_summarize)
+    embedding_resume = embed_text(resume_draft)
+    
+    # Récupérer tous les points (on pourrait aussi faire un filtre ou une recherche optimisée)
+    response = client.scroll(
+        collection_name=QDRANT_COLLECTION_SUPPORT_2,
+        limit=20,  # ajuste selon la taille
+        with_vectors=True,
+        with_payload=True
+    )
+
+    results = []
+    for point in response[0]:
+        source_vec = point.vectors.get("embedding_source_like")
+        resume_vec = point.vectors.get("embedding_resume")
+
+        if source_vec is None or (resume_draft and resume_vec is None):
+            continue
+
+        sim_content = cosine_similarity(embedding_contenu, source_vec)
+        sim_style = cosine_similarity(embedding_resume, resume_vec) 
+
+        score = alpha * sim_content + beta * sim_style
+        results.append((point.payload.get("resume"), score))
+
+    # Trier les résultats par score décroissant
+    results.sort(key=lambda x: x[1], reverse=True)
+    return results[:top_k]
+
+
+def retrieve_text_source(query):
+    """Récupère le contexte pertinent pour la requête, éventuellement filtré par fichier"""
+    retriever2 = vectorstore2.as_retriever(search_kwargs={"k": len(st.session_state["processed_files"])})
+    retrieved_docs2 = retriever2.invoke(query)
+
+    text_source = "\n\n".join(
+        [
+            f"{doc.page_content}"
+            for doc in retrieved_docs2
+        ]
+    )
+
+    return text_source
+
+def extraire_resume(resumer_courant):
+    for ligne in resumer_courant.splitlines():
+        if ligne.lower().startswith("resume"):
+            return ligne.split(":", 1)[1].strip()
+    return ""
+
+
+
+# 🔥 Chargement du modèle Groq avec mise en cache
+@st.cache_resource
+def get_llm(llm_name):
+    return ChatGroq(groq_api_key=GROQ_API_KEY_3, model_name=llm_name)
+
+llm = get_llm(LLM_NAME_4)
+llm2=get_llm(LLM_NAME_4)
+
+def clear_uploaded_files():
+    """Réinitialisation des fichiers et de la session"""
+    client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
+    st.session_state.clear()
+    st.session_state["file_uploader"] = None
+    st.markdown("<meta http-equiv='refresh' content='0'>", unsafe_allow_html=True) 
+# 📂 Barre latérale pour uploader les fichiers
+st.sidebar.header("📂 Upload your files:")
+if "file_uploader_key" not in st.session_state:
+    st.session_state["file_uploader_key"] = 0
+if "submit_clicked" not in st.session_state:
+    st.session_state["submit_clicked"] = False 
+if "titles_per_file" not in st.session_state:
+    st.session_state["titles_per_file"] = None
+if "resumes_per_file" not in st.session_state:
+    st.session_state["resumes_per_file"] = []
+
+uploaded_files = st.sidebar.file_uploader(
+    "Choose your files ",
+    type=["pdf",".mp3", ".wav", ".ogg", ".flac", ".m4a",".mp4", ".avi", ".mov", ".mkv"],
+    accept_multiple_files=True,
+    key=f"file_uploader_{st.session_state['file_uploader_key']}",
+)
+
+# 🔘 Boutons de contrôle
+col1, col2 = st.sidebar.columns(2)
+with col1:
+    if st.button("🗑 Reset all"):
+        clear_uploaded_files()
+        st.session_state["submit_clicked"] = False  # Reset Submit
+
+with col2:
+    if st.button("✅ Submit"):
+        st.session_state["submit_clicked"] = True  # Activer le stockage
+
+# 📌 Initialisation des sessions
+st.session_state.setdefault("messages", [])
+st.session_state.setdefault("processed_files", set())
+st.session_state.setdefault("summary_generated", False)
+if "summary_ready" not in st.session_state:
+    st.session_state["summary_ready"] = False
+st.session_state.setdefault("retrieved_contexts", [])
+
+
+def process_and_store_file(file):
+    """Extrait le texte du fichier et stocke les embeddings"""
+    suffix = os.path.splitext(file.name)[1]
+    file_type = suffix.lstrip(".")
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        temp_file.write(file.read())
+        temp_file_path = temp_file.name
+
+    try:
+        text = extract_text(temp_file_path)
+        if text:
+            vectorstore.add_texts([text], metadatas=[{"file_name": file.name, "file_type": file_type}])
+            st.session_state["processed_files"].add(file.name)
+    except ValueError as e:
+        st.error(f"⚠ Extraction error: {e}")
+    finally:
+        os.remove(temp_file_path)
+
+def retrieve_context_with_metadata_file(query, file_name=None):
+    """Récupère le contexte pertinent pour la requête, éventuellement filtré par fichier"""
+    retriever = vectorstore.as_retriever(search_kwargs={"k": len(st.session_state["processed_files"])})
+    retrieved_docs = retriever.invoke(query)
+
+    if file_name:
+        # Ne garder que les documents liés à ce fichier
+        retrieved_docs = [doc for doc in retrieved_docs if doc.metadata.get("file_name") == file_name]
+
+    formatted_context = "\n\n".join(
+        [
+            f"📂 Fichier: {doc.metadata.get('file_name', 'Inconnu')}\n"
+            f"📄 Type: {doc.metadata.get('file_type', 'Inconnu')}\n"
+            f"🔹 Contenu:\n{doc.page_content}"
+            for doc in retrieved_docs
+        ]
+    )
+
+    return formatted_context
+
+def document_retrieval_tool(query: str) -> str:
+    context = st.session_state.get("retrieved_contexts", "")
+    prompt = f"Contexte :\n{context}\n\nQuestion : {query}"
+    return prompt  # C'est ce que l'agent envoie ensuite au LLM
+
+
+def outil_consulter_memoire(_):
+    messages = memory.chat_memory.messages
+    if not messages:
+        return "La mémoire est actuellement vide."
+    
+    historique = []
+    for msg in messages:
+        if msg.type == "human":
+            historique.append(f"👤 Utilisateur : {msg.content}")
+        elif msg.type == "ai":
+            historique.append(f"🤖 Assistant : {msg.content}")
+        else:
+            historique.append(f"{msg.type.capitalize()} : {msg.content}")
+    
+    return "\n\n".join(historique)
+
+chat_history = MessagesPlaceholder(variable_name="chat_history")
+
+if "memory" not in st.session_state:
+    st.session_state.memory = ConversationBufferMemory(
+        memory_key="chat_history",
+        return_messages=True
+    )
+memory = st.session_state.memory
+
+# Définir les outils à utiliser par l'agent
+tools = [
+    Tool(
+        name="Document Retrieval",
+        func=document_retrieval_tool,
+        description = "Récupère les informations pertinentes à partir des documents et répond aux questions des utilisateurs de manière claire, précise et structurée."
+
+    ),
+    Tool(
+        name="Consulter la mémoire",
+        func=outil_consulter_memoire,
+        description="Permet de consulter l'historique de la conversation entre l'utilisateur et l'assistant."
+    )
+]
+
+# Initialiser l'agent avec des outils
+if "agent" not in st.session_state:
+    st.session_state.agent = initialize_agent(
+        tools=tools,
+        llm=llm2,
+        agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        verbose=True,
+        handle_parsing_errors=True,
+        memory=memory
+        
+    )
+
+agent = st.session_state.agent
+
+
+# 📌 Chaînes de traitement
+chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
+chain_traduction  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction | llm| StrOutputParser())
+chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm | StrOutputParser())
+chain_resumer_support=({"summary": itemgetter("summary"),
+        "support_summary_1":itemgetter("support_summary_1"),      
+        "support_summary_2":itemgetter("support_summary_2"),     } | prompt_support | llm | StrOutputParser())
+
+# 🛑 Suppression des données uniquement si tous les fichiers ont été supprimés manuellement
+if not uploaded_files and st.session_state["processed_files"]:
+    client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
+    st.session_state["processed_files"].clear()  # Réinitialisation des fichiers traités
+    st.session_state["summary_generated"] = False  # Autoriser une nouvelle génération de résumé
+    st.session_state.pop("summary_text", None)  # Supprime l'ancien résumé s'il existe
+    st.session_state["messages"] = []  # Réinitialise les messages du chat
+    st.session_state.setdefault("retrieved_contexts", [])
+    st.session_state["titles_per_file"] = None
+    st.session_state["resumes_per_file"] = []
+
+# 🛑 Suppression des données une seule fois
+if uploaded_files and not st.session_state["summary_generated"]:
+    client.delete(collection_name=QDRANT_COLLECTION, points_selector=FilterSelector(filter=Filter(must=[])))
+    st.session_state["summary_generated"] = True
+
+# 📌 Traitement des fichiers uploadés
+if uploaded_files and st.session_state["submit_clicked"]:
+    for file in uploaded_files:
+        if file.name not in st.session_state["processed_files"]:
+            process_and_store_file(file)
+
+    # 📖 Génération du résumé seulement si de nouveaux fichiers sont présents
+    if uploaded_files:
+        query = "Fais un résumé clair et structuré des informations disponibles."
+        for idx, uploaded_file in enumerate(uploaded_files):
+            context = retrieve_context_with_metadata_file(query, file_name=uploaded_file.name)
+
+            st.session_state["retrieved_contexts"].append(context)
+            
+
+            # Générer le résumé
+            resume = ""
+            for chunk in chain_resumer.stream({"context": context, "language": "francais"}):
+                if chunk:
+                    resume += chunk
+            print(uploaded_file.name,"resumer: ",resume)
+
+            st.session_state["resumes_per_file"].append(resume)
+
+        # Initialisation des sessions si elles n'existent pas
+        if "summary_text" not in st.session_state:
+            st.session_state["summary_text"] = {"fr": "", "ar": ""} 
+        st.markdown('<h2 style="font-size: 22px;">📖 Résumé des documents</h2>', unsafe_allow_html=True)
+        st.divider()  # Ligne de séparation visuelle
+
+        # 📌 Résumé en Français
+        with st.expander("📌 Résumé en Français", expanded=True):
+            summary_fr_placeholder = st.empty()
+
+            if not st.session_state["summary_text"]["fr"]:
+                print(st.session_state["retrieved_contexts"])
+                print(st.session_state["resumes_per_file"])
+                # Cas de plusieurs fichiers → faire appel à titre/résumé global
+                all_resumes = "\n\n".join(st.session_state["resumes_per_file"])
+                if len(uploaded_files) == 1:
+                    texte_resume = st.session_state["resumes_per_file"][0]
+                    resumer_courant = extraire_resume(texte_resume)
+
+                    contenu_to_summarize = retrieve_text_source(query)
+
+                    resumes_support_results = search_similar_documents_in_qdrant(contenu_to_summarize, resumer_courant)
+                    print("resumes_support_results : \n\n", resumes_support_results)
+
+                    resume_avec_support = ""
+
+                    for chunk in chain_resumer_support.stream(resumes_support_results):
+                        if chunk:
+                            resume_avec_support += chunk
+                            summary_fr_placeholder.markdown(
+                                f"""<div style="text-align: justify;">
+                                         {resume_avec_support}
+                                    </div>""",
+                                unsafe_allow_html=True
+                            )
+                    st.session_state["summary_text"]["fr"] = resume_avec_support
+                            
+                else:
+                    all_resumes = "\n\n".join(st.session_state["resumes_per_file"])
+                    resume_sans_support = ""
+                    for chunk in chain_resumer_general.stream({"context": all_resumes, "language": "francais"}):
+                        if chunk:
+                            resume_sans_support += chunk
+                    resume_avec_support = ""
+                  
+                    for chunk in chain_resumer_support.stream(resume_avec_support):
+                        if chunk:
+                            resume_avec_support += chunk
+                            summary_fr_placeholder.markdown(
+                                f"""<div style="text-align: justify;">
+                                         {resume_avec_support}
+                                    </div>""",
+                                unsafe_allow_html=True
+                            )
+                    st.session_state["summary_text"]["fr"] = resume_avec_support
+
+                # 📌 Résumé en Arabe
+        with st.expander("📌 ملخص باللغة العربية", expanded=True):
+            summary_ar_placeholder = st.empty()
+
+            if not st.session_state["summary_text"]["ar"]:
+                # 1. Générer le résumé brut en une seule fois (pas de streaming ici)
+                st.session_state["summary_text"]["ar"] = ""
+                for chunk in chain_traduction.stream({"resume_francais": st.session_state["summary_text"]["fr"]}):
+                    if chunk:
+                        st.session_state["summary_text"]["ar"] += chunk
+                        summary_ar_placeholder.markdown(f'<div style="font-size: 21px; text-align: justify; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
+
+            else:
+                summary_ar_placeholder.markdown(f'<div style="font-size: 21px; text-align: justify; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
+
+
+        # Réinitialiser le bouton Submit après la génération du résumé
+        st.session_state["submit_clicked"] = False
+
+        st.session_state["summary_ready"] = True  # Indiquer que le résumé est prêt
+
+
+    # 💬 Message après le résumé
+    st.markdown('<h3 style="font-size: 20px;">💬 <b>Vous pouvez maintenant poser vos questions dans le chat ci-dessous</b></h3>', unsafe_allow_html=True)
+elif "summary_text" in st.session_state :  # S'affiche uniquement si un résumé existe et qu'aucun fichier n'est uploadé
+    st.markdown('<h2 style="font-size: 22px;">📖 Résumé des documents</h2>', unsafe_allow_html=True)
+    st.divider()  # Ligne de séparation visuelle
+
+    with st.expander("📌 Résumé en Français", expanded=True):
+        st.markdown(  f'''
+                    <div style="text-align: justify;">
+                        {st.session_state["summary_text"]["fr"]}
+                    </div>
+                    ''', 
+                    unsafe_allow_html=True
+                )
+
+    with st.expander("📌 ملخص باللغة العربية", expanded=True):
+        st.markdown(f'<div style="font-size: 21px; text-align: justify; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
+
+    st.markdown('<h3 style="font-size: 20px;">💬 <b>Vous pouvez maintenant poser vos questions dans le chat ci-dessous</b></h3>', unsafe_allow_html=True)
+
+
+# 🔄 Affichage des messages existants
+for message in st.session_state["messages"]:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# ✅ Activation du chat après le résumé
+
+user_input = st.chat_input(
+    "Ask your questions here..." if st.session_state["summary_ready"] else "❌ Please upload and submit a file first.", 
+    disabled=not st.session_state["summary_ready"]
+)
+st.markdown("""
+    <style>
+        .stChatInput textarea {
+            font-size: 18px !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+          
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+if user_input:
+    # Afficher le message utilisateur
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
+    # Réponse de l'agent
+    with st.chat_message("assistant"):
+        with st.spinner("Analyse en cours..."):
+            response = agent.run(user_input)
+            st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
