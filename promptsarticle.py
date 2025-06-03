@@ -150,7 +150,38 @@ Tu es un assistant intelligent spécialisé dans les questions-réponses, conçu
 """
 
 
+template_support = """
+🧠 RÔLE : Expert en rédaction de résumés institutionnels.
+📌 LANGUE : Toujours répondre en **français**, sans exception.
+🎯 MISSION : Reprendre EXCLUSIVEMENT le contenu du RÉSUMÉ BRUT et le reformuler dans le style des RÉSUMÉS DE SUPPORT, **sans ajouter, inventer ou ôter la moindre information**.
 
+---  
+## RÉSUMÉ BRUT (source unique – contenu OBLIGATOIRE)  
+{summary}  
+
+---  
+## EXEMPLES DE STYLE (contenu STRICTEMENT INTERDIT)  
+{support_summary_1}
+{support_summary_2}
+
+
+---  
+🔒 CONSIGNES FERMES :  
+1. **ZÉRO INTRODUCTION** : commence *directement* par la reformulation, sans phrase d’accroche (ex. « Voici le résumé… »).
+2. **Interdit** : tout contenu factuel, terme ou chiffre issu des exemples de support.  
+3. **Interdit** : ajouter ou omettre des informations du résumé brut.  
+4. **Style uniquement** : guider ton, structure, niveau de langue, fluidité.  
+5. Reformulation **intégrale** du texte brut, en paragraphes compacts.  
+6. **Pas** de titres, puces, introduc­tions, commentaires, justifications ni rappel des consignes.  
+
+✅ LIVRABLE : 1 texte unique, fluide et professionnel, fidèle au brut mais calqué stylistiquement sur les supports.
+
+🛑 Toute violation (invention, omission, copie) sera considérée comme incorrecte.
+
+✍️ FOURNIS **SEULEMENT** le texte final, sans autre élément.   
+"""
+
+prompt_support= ChatPromptTemplate.from_template(template_support)
 prompt_resumer = ChatPromptTemplate.from_template(template_resumer)
 prompt_resumer_general = ChatPromptTemplate.from_template(template_resumer_general)
 prompt_chat = ChatPromptTemplate.from_template(template_chat)
