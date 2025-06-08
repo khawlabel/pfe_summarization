@@ -151,35 +151,37 @@ Tu es un assistant intelligent spécialisé dans les questions-réponses, conçu
 
 
 template_support = """
-🧠 RÔLE : Expert en rédaction de résumés institutionnels.
-📌 LANGUE : Toujours répondre en **français**, sans exception.
-🎯 MISSION : Reprendre EXCLUSIVEMENT le contenu du RÉSUMÉ BRUT et le reformuler dans le style des RÉSUMÉS DE SUPPORT, **sans ajouter, inventer ou ôter la moindre information**.
+🧠 RÔLE : Expert en reformulation éditoriale pour documents institutionnels.  
+📌 LANGUE : Toujours répondre en *français*, sans exception.  
+🎯 OBJECTIF : Réécrire le RÉSUMÉ BRUT en le rendant plus fluide, concis et lisible, en s’inspirant du *ton* et de la *structure* des EXEMPLES DE STYLE — *sans s’éloigner du fond*, et en *supprimant uniquement les éléments non essentiels*.  
 
----  
-## RÉSUMÉ BRUT (source unique – contenu OBLIGATOIRE)  
+---
+
+## 🔹 RÉSUMÉ BRUT (à reformuler avec discernement, sans altération du fond)  
 {summary}  
 
----  
-## EXEMPLES DE STYLE (contenu STRICTEMENT INTERDIT)  
-{support_summary_1}
-{support_summary_2}
+---
 
+## 🔹 EXEMPLES DE STYLE (références stylistiques — à ne pas recopier)  
+{support_summary_1}  
+{support_summary_2}  
 
----  
-🔒 CONSIGNES FERMES :  
-1. **ZÉRO INTRODUCTION** : commence *directement* par la reformulation, sans phrase d’accroche (ex. « Voici le résumé… »).
-2. **Interdit** : tout contenu factuel, terme ou chiffre issu des exemples de support.  
-3. **Interdit** : ajouter ou omettre des informations du résumé brut.  
-4. **Style uniquement** : guider ton, structure, niveau de langue, fluidité.  
-5. Reformulation **intégrale** du texte brut, en paragraphes compacts.  
-6. **Pas** de titres, puces, introduc­tions, commentaires, justifications ni rappel des consignes.  
+---
 
-✅ LIVRABLE : 1 texte unique, fluide et professionnel, fidèle au brut mais calqué stylistiquement sur les supports.
+🎯 CONSIGNES DE RÉÉCRITURE :  
+1. ✏ Améliore la formulation du résumé brut avec *subtilité* : syntaxe, lexique, enchaînement logique.  
+2. ✂ Supprime les éléments *redondants ou accessoires* si leur absence ne nuit pas à la compréhension du contenu essentiel.  
+3. 📏 Le résumé final *ne doit pas dépasser la longueur du résumé brut* (idéalement, il peut être plus court).  
+4. ✅ Conserve *strictement toutes les informations essentielles* : faits, données, noms, lieux, chiffres, événements.  
+5. 🔄 Tu peux réorganiser des phrases pour renforcer la clarté ou la fluidité, à condition de ne rien altérer d’important.  
+6. ❌ N’ajoute aucune information, opinion ou interprétation non présente dans le résumé brut.  
+7. ❌ Ne copie aucun extrait des exemples : ils servent uniquement à guider le *style rédactionnel attendu* (niveau de langue, concision, rythme).  
 
-🛑 Toute violation (invention, omission, copie) sera considérée comme incorrecte.
+✅ LIVRABLE : un *seul paragraphe*, clair, fluide, concis, fidèle au fond du résumé brut, et aligné stylistiquement avec les exemples.
 
-✍️ FOURNIS **SEULEMENT** le texte final, sans autre élément.   
+🛑 Toute reformulation trop libre, toute addition ou tout allongement injustifié du contenu sera considéré comme incorrect.
 """
+
 
 prompt_support= ChatPromptTemplate.from_template(template_support)
 prompt_resumer = ChatPromptTemplate.from_template(template_resumer)

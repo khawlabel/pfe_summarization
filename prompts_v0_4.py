@@ -106,67 +106,68 @@ Résumés :
 Titre général (strictement en {language}) :  
 """
 
-
 template_resumer = """
-                Ta tâche est de produire un **résumé clair, structuré et informatif**, à partir du **contexte fourni** ci-dessous. Tu dois **respecter scrupuleusement toutes les consignes**, notamment la **longueur maximale**, sans ajout ni omission.
+Ta tâche est de produire un résumé clair, structuré et informatif, à partir du *contexte fourni* ci-dessous. Tu dois respecter scrupuleusement toutes les consignes, notamment la **longueur maximale, sans ajout ni omission, et en conservant au maximum le vocabulaire du texte d’origine.
 
-                ---
+---
 
-                ### 🎯 Objectif :
-                Résumer fidèlement le contenu, **sans interprétation, reformulation excessive ni analyse personnelle**, en conservant **tous les faits, chiffres, noms et dates essentiels**.
+### 🎯 Objectif :
+Résumer fidèlement le contenu, sans interprétation, reformulation excessive ni analyse personnelle, en conservant **tous les faits, chiffres, noms, formulations et dates essentiels.
 
-                ---
+---
 
-                ### ⚠️ Contraintes de forme OBLIGATOIRES :
-                - ✅ **Longueur** : **entre 9 et 146 mots** (**≈ 80 mots recommandés**).
-                - ✅ **Nombre de caractères** : **entre 59 et 927 caractères**.
-                - ✅ **Nombre de phrases** : **1 à 3 phrases** (maximum 8).
-                - ✅ **Un seul paragraphe**, sans puces, sans liste, ni numérotation.
-                - ✅ **Style neutre et journalistique**.
-                - ⛔️ **Aucune introduction ni conclusion**.
-                - ⛔️ **Interdiction absolue de formules comme** :
-                    - "Résumé :", "Voici le résumé :", "En résumé", etc.
-                    - Le résumé doit **commencer directement** par la première phrase.
-                
-                ---
+### ⚠ Contraintes de forme OBLIGATOIRES :
+- ✅ Longueur : entre 9 et 146 mots (≈ 80 mots recommandés).
+- ✅ Nombre de caractères : entre 59 et 927 caractères.
+- ✅ Nombre de phrases : 1 à 3 phrases (maximum 8).
+- ✅ Un seul paragraphe, sans puces, sans liste, ni numérotation.
+- ✅ Style neutre, journalistique et factuel.
+- ⛔ Aucune introduction ni conclusion.
+- ⛔ Interdiction absolue de formules comme :
+    - "Résumé :", "Voici le résumé :", "En résumé", etc.
+    - Le résumé doit commencer directement par la première phrase.
 
-                ### 🧱 Structure logique imposée :
-                Commence toujours par **[Qui] a annoncé / indiqué**, suivi de **[Quoi]**, **[Quand]**, **[Où]**, **[Comment]**, **[Pourquoi]** si disponible.
+---
 
-                > Exemple :  
-                > **Le ministère de la Santé a annoncé** une hausse de 15 % des dépenses médicales en 2024 à Alger, liée à l’augmentation des besoins hospitaliers.
+### 🧱 Structure logique imposée :
+Toujours commencer par **[Qui] a annoncé / indiqué / déclaré / affirmé**, suivi obligatoirement (si elle est présente dans le texte) de **[Quand]**, puis de **[Quoi]**, **[Où]**, **[Comment]**, **[Pourquoi]** si l’information est disponible.
 
-                Si l’une de ces infos est absente, **ne l’invente jamais**.
+> Exemple :  
+> Le ministère de la Santé a annoncé une hausse de 15 % des dépenses médicales en 2024 à Alger, liée à l’augmentation des besoins hospitaliers.
+> La ministre de l'Éducation a annoncé le 4 juin 2025 une réforme des programmes scolaires à Paris, visant à renforcer les compétences numériques.
 
-                ---
 
-                ### 🧾 Règles de contenu :
-                - 🔹 **Ne jamais ajouter d'informations non présentes dans le contexte.**
-                - 🔹 **Reprendre les termes du contexte exactement** : pas de reformulation des noms officiels.
-                - 🔹 **Aucune explication technique ni interprétation** n’est autorisée.
-                - 🔹 **Respect total des chiffres, unités et formulations.**
-                - 🔹 Si le document est long, **ne résume que les faits essentiels et prioritaires**, **sans perdre l'information principale**.
+Si l’une de ces infos est absente, ne l’invente jamais.
 
-                ---
+---
 
-                ### 💡 Astuce pour gérer les longs contextes :
-                Avant de rédiger le résumé :
-                1. **Identifie les phrases contenant des faits, chiffres, dates, entités ou annonces.**
-                2. **Ignore les détails secondaires ou répétés.**
-                3. **Ne conserve que l’essentiel pour rester dans la limite de mots.**
+### 🧾 Règles de contenu :
+- 🔹 Ne jamais ajouter d'informations non présentes dans le contexte.
+- 🔹 Utiliser les formulations, tournures et termes exacts du contexte autant que possible.
+- 🔹 Éviter toute reformulation inutile ou perte lexicale importante.
+- 🔹 Aucune explication technique ni interprétation n’est autorisée.
+- 🔹 Respect total des chiffres, unités et formulations.
+- 🔹 Se limiter aux informations les plus significatives, en conservant les expressions originales du texte quand c’est possible.
 
-                ---
+---
 
-                Maintenant, applique les consignes suivantes au contexte ci-dessous.
+### 💡 Astuce pour gérer les longs contextes :
+Avant de rédiger le résumé :
+1. Repérer les phrases contenant des faits, chiffres, dates, entités ou annonces officielles.
+2. Éliminer les détails secondaires ou redondants.
+3. Reformuler uniquement si nécessaire pour condenser, mais garder les mots-clés et noms exacts.
 
-                Contexte :  
-                {context}
+---
 
-                ---
+Maintenant, applique les consignes suivantes au contexte ci-dessous.
 
-                Résumé (en {language}) :
-                """
+Contexte :  
+{context}
 
+---
+
+Résumé (en {language}) :
+"""
 
 template_traduction =  """
     Vous êtes un traducteur professionnel. Votre tâche est de traduire le texte ci-dessous du français vers l'arabe. Voici les règles que vous devez suivre pour cette traduction :
@@ -179,9 +180,10 @@ template_traduction =  """
     Voici le texte à traduire : 
     {resume_francais}
     """
+
 template_support = """
 🧠 RÔLE : Expert en rédaction de résumés institutionnels.
-
+📌 LANGUE : Toujours répondre en **français**, sans exception.
 🎯 MISSION : Reprendre EXCLUSIVEMENT le contenu du RÉSUMÉ BRUT et le reformuler dans le style des RÉSUMÉS DE SUPPORT, **sans ajouter, inventer ou ôter la moindre information**.
 
 ---  
@@ -193,13 +195,7 @@ template_support = """
 {support_summary_1}
 {support_summary_2}
 {support_summary_3}
-{support_summary_4}
-{support_summary_5}
-{support_summary_6}
-{support_summary_7}
-{support_summary_8}
-{support_summary_9}
-{support_summary_10}
+
 
 ---  
 🔒 CONSIGNES FERMES :  
@@ -214,7 +210,8 @@ template_support = """
 
 🛑 Toute violation (invention, omission, copie) sera considérée comme incorrecte.
 
-✍️ FOURNIS **SEULEMENT** le texte final, sans autre élément.   
+✍️ FOURNIS **SEULEMENT** le texte final, sans autre élément. 
+  
 """
 
 prompt_resumer = ChatPromptTemplate.from_template(template_resumer)
