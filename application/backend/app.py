@@ -21,7 +21,8 @@ from langchain.memory import ConversationBufferMemory
 from prompts_v0_4 import *
 from qdrant_client.http.models import Filter, FilterSelector
 from fastapi.middleware.cors import CORSMiddleware
-
+from numpy import dot
+import numpy as np
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -36,7 +37,7 @@ DB_PATH ="users.db"
 app = FastAPI()
 
 origins = [
-    "http://10.0.0.236:3000",
+    "http://172.25.224.1:3000",
     "http://localhost:3000",
     "http://frontend:3000",  # <- à ajouter pour que Docker accepte les requêtes du frontend
 ]
@@ -188,24 +189,43 @@ def stream_responses(chain,queries):
     for query in queries:
         for chunk in chain.stream(query):
             yield chunk
+def cosine_similarity(a, b):
+    a = np.array(a)
+    b = np.array(b)
+    return dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
-# ==================== Route d'enregistrement ====================
+def embed_text(text):
+    return app.state.embedding_model.embed_query(text)
+
+def search_support(contenu: str, resume_draft: str, alpha: float = 0.7, beta: float = 0.3, top_k: int = 2):
+    emb_contenu = embed_text(contenu)
+    emb_resume = embed_text(resume_draft)
+
+    results = []
+    for p in app.state.support_summaries:
+        vec_source = p.payload.get("embedding_source_like")
+        vec_resume = p.payload.get("embedding_resume")
+        if vec_source is None or vec_resume is None:
+            continue
+        score = (
+            alpha * cosine_similarity(emb_contenu, vec_source)
+            + beta * cosine_similarity(emb_resume, vec_resume)
+        )
+        results.append((p.payload.get("resume"), score))
+
+    return sorted(results, key=lambda x: x[1], reverse=True)[:top_k]
 
 @app.on_event("startup")
 async def start():
     client, embedding_model, vectorstore = init_qdrant()
     
             # Récupérer tous les points (résumés) de la collection
-    scroll_result = client.scroll(
-        collection_name=QDRANT_COLLECTION_SUPPORT,
-        limit=15,  # ajuste selon le nombre total de documents
+    points, _ = client.scroll(
+        collection_name=QDRANT_COLLECTION_SUPPORT_2,
+        limit=20,
+        with_vectors=True,
         with_payload=True
     )
-    support_summaries = {}
-    for idx, point in enumerate(scroll_result[0]):
-        key = f"support_summary_{idx+1}"
-        support_summaries[key] = point.payload.get("page_content", "")  # "summary" ou le champ correct
-    app.state.support_summaries=support_summaries
 
 
     llm1 = load_llm1()
@@ -225,16 +245,21 @@ async def start():
     chain_traduction_resume  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction_resume | llm3 | StrOutputParser())
     chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm5 | StrOutputParser())
     chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm6 | StrOutputParser())
-    chain_resumer_support=({"summary": itemgetter("summary"),
-            "support_summary_1":itemgetter("support_summary_1"),      
-            "support_summary_2":itemgetter("support_summary_2"),   
-            "support_summary_3":itemgetter("support_summary_3"),    } | prompt_support | llm7 | StrOutputParser())
-    
+    chain_resumer_support = (
+            {
+                "summary": itemgetter("summary"),
+                "support_summary_1": itemgetter("support_summary_1"),
+                "support_summary_2": itemgetter("support_summary_2")
+            } | prompt_support | llm7 | StrOutputParser()
+        )
+            
 
+    app.state.support_summaries=points
     app.state.vectorstore = vectorstore
     app.state.embedding_model = embedding_model 
     app.state.client = client 
     app.state.extract_text_func = extract_text 
+    app.state.extract_text = "" 
     app.state.chain_resumer = chain_resumer 
     app.state.chain_traduction_titre = chain_traduction_titre
     app.state.chain_traduction_resume = chain_traduction_resume
@@ -282,6 +307,7 @@ async def upload_and_store_file(
                 temp_file_path = temp_file.name
 
             text = app.state.extract_text_func(temp_file_path)
+            app.state.extract_text=text
 
             if not text:
                 results.append({"file_name": file_name, "error": "❌ Aucun texte extrait."})
@@ -404,16 +430,21 @@ async def generate_summary_stream():
             "context": all_resumes,
             "language": "francais"
         })
-
-    app.state.support_summaries["summary"] = resume
-
-    def full_stream():
-        complete_resume = ""
-        for chunk in app.state.chain_resumer_support.stream(app.state.support_summaries):
-            complete_resume += chunk
-            yield chunk
-        app.state.resume_fr=complete_resume
-    return StreamingResponse(full_stream(), media_type="text/event-stream")
+    resultats = search_support(app.state.extract_text, resume)
+    if resultats:
+        support1 = resultats[0][0]
+        support2 = resultats[1][0] if len(resultats) > 1 else ""
+        def full_stream():
+            complete_resume = ""
+            for chunk in app.state.chain_resumer_support.stream({
+            "summary": resume,
+            "support_summary_1": support1,
+            "support_summary_2": support2
+             }):
+                complete_resume += chunk
+                yield chunk
+            app.state.resume_fr=complete_resume
+        return StreamingResponse(full_stream(), media_type="text/event-stream")
 
 
 @app.get("/generate_titre_fr")

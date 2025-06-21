@@ -190,38 +190,33 @@ template_traduction_resume =  """
     Voici le texte à traduire : 
     {resume_francais}
     """
-template_support = """
-🧠 RÔLE : Expert en rédaction de résumés institutionnels.
 
-🎯 MISSION : Reprendre EXCLUSIVEMENT le contenu du RÉSUMÉ BRUT et le reformuler dans le style des RÉSUMÉS DE SUPPORT, *sans ajouter, inventer ou ôter la moindre information*.
+template_support = """
+🧠 RÔLE : Expert en reformulation éditoriale pour supports institutionnels.  
+📌 LANGUE : Toujours répondre en français, sans exception.  
+🎯 OBJECTIF : Améliorer légèrement le style du RÉSUMÉ BRUT pour le rendre plus fluide et lisible, en s’inspirant du ton et de la structure des EXEMPLES DE STYLE — sans altérer le fond ni trop s’éloigner de la formulation d’origine.
 
 ---  
-## RÉSUMÉ BRUT (source unique – contenu OBLIGATOIRE)  
+## 🔹 RÉSUMÉ BRUT (contenu à préserver intégralement — reformulation minimale requise)  
 {summary}  
 
 ---  
-## EXEMPLES DE STYLE (contenu STRICTEMENT INTERDIT)  
+## 🔹 EXEMPLES DE STYLE (repères de ton et de structure — à ne pas reproduire mot à mot)  
 {support_summary_1}
 {support_summary_2}
-{support_summary_3}
-
 
 ---  
-🔒 CONSIGNES FERMES :  
-1. *ZÉRO INTRODUCTION* : commence directement par la reformulation, sans phrase d’accroche (ex. « Voici le résumé… »).
-2. *Interdit* : tout contenu factuel, terme ou chiffre issu des exemples de support.  
-3. *Interdit* : ajouter ou omettre des informations du résumé brut.  
-4. *Style uniquement* : guider ton, structure, niveau de langue, fluidité.  
-5. Reformulation *intégrale* du texte brut, en paragraphes compacts.  
-6. *Pas* de titres, puces, introduc­tions, commentaires, justifications ni rappel des consignes.  
+🎯 CONSIGNES DE RÉÉCRITURE :  
+1. ✏ Reformule le résumé brut avec discrétion : améliore la syntaxe, la fluidité, le lexique et l’enchaînement, sans transformer le style original de manière excessive.  
+2. ✅ Respecte scrupuleusement tous les faits, chiffres, noms, lieux et dates mentionnés dans le résumé brut.  
+3. 🔄 Tu peux réorganiser légèrement certaines phrases pour améliorer la lisibilité, sans supprimer, ajouter ni modifier le contenu.  
+4. 🔍 Reste fidèle à l’esprit et à la formulation du résumé brut : ce n’est pas une réécriture complète, mais une amélioration stylistique modérée.  
+5. ❌ N’ajoute aucune idée, interprétation, nuance ou donnée absente du résumé brut.  
+6. ❌ Ne copie aucun extrait des exemples de style : ils servent uniquement à guider le ton et la structure.  
 
-✅ LIVRABLE : 1 texte unique, fluide et professionnel, fidèle au brut mais calqué stylistiquement sur les supports.
+✅ LIVRABLE : un seul paragraphe, clair, fluide et concis, qui reprend fidèlement le fond du résumé brut, avec une touche stylistique discrète inspirée des exemples.
 
-🛑 Toute violation (invention, omission, copie) sera considérée comme incorrecte.
-
-📌 LANGUE : Toujours répondre en *français*, sans exception.
-
-✍ FOURNIS *SEULEMENT* le texte final, sans autre élément.   
+🛑 Toute transformation excessive ou ajout de contenu sera considéré comme incorrect.
 """
 
 template_chat = """

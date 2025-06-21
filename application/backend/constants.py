@@ -24,6 +24,7 @@ GROQ_API_KEY_7 = os.getenv('GROQ_API_KEY_7')
 QDRANT_COLLECTION = os.getenv('QDRANT_COLLECTION')
 QDRANT_COLLECTION_v1 = os.getenv('QDRANT_COLLECTION_v1')
 QDRANT_COLLECTION_SUPPORT= os.getenv('QDRANT_COLLECTION_SUPPORT')
+QDRANT_COLLECTION_SUPPORT_2 = os.getenv('QDRANT_COLLECTION_SUPPORT_2')
 
 # Modèles utilisés
 LLM_NAME_1="llama3-8b-8192"
@@ -40,7 +41,7 @@ RERANKER_MODEL="BAAI/bge-reranker-v2-m3"
 
 if platform.system() == "Windows":
     PATH_tesseract = r"C:\Users\Dell\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
-    PATH_poppler = "C:/poppler/poppler-24.08.0/Library/bin"
+    PATH_poppler = r"C:\Program Files\poppler-24.08.0\Library\bin"
 else:
     PATH_tesseract = "/usr/bin/tesseract"  # Chemin par défaut dans Docker Linux
     PATH_poppler = None  # Pas nécessaire sous Linux si `pdf2image` fonctionne
