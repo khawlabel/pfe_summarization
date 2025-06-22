@@ -240,8 +240,7 @@ const Register = () => {
                 helperText={formik.touched.firstname && formik.errors.firstname}
                 sx={{
                   ...textFieldStyle,
-                  direction: isArabic ? 'rtl' : 'ltr',
-                  textAlign: isArabic ? 'right' : 'left',
+                  
                 }}
               />
               <TextField

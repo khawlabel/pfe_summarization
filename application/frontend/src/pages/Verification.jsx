@@ -94,6 +94,7 @@ const Verification = () => {
 
   return (
     <Box
+    dir={isArabic ? 'rtl' : 'ltr'}
       sx={{
         height: '100vh',
         backgroundColor: COLORS.background,

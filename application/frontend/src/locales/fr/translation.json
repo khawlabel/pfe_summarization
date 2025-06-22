@@ -20,6 +20,8 @@
   "restart": "Recommencer",
   "reset_tooltip": "Réinitialiser pour résumer de nouveaux fichiers",
   "input_placeholder": "Envoyer un message...",
+  "french_summary": "Résumé en français",
+  "arabic_summary": "Résumé en arabe",
   "welcome_message": "👋 **Bienvenue !** JJe suis votre assistant intelligent. Je suis ici pour répondre à vos questions sur les fichiers que vous avez soumis.",
   "main_title_prefix": "Bienvenue sur",
   "chat_section_title": "Analyse assistée — Discutez avec le bot",

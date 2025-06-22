@@ -66,6 +66,7 @@ const getFlagImage = (lang) => {
   const getLangLabel = (lang) => {
     return t(`lang_${lang}`);
   };
+  const isArabic = i18n.language === 'ar';
 
   const { mode } = useContext(ThemeContext);
 
@@ -277,7 +278,7 @@ return (
 
           {files.length > 0 && (
             <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Typography variant="body2" sx={{ color: COLORS.primary, fontWeight: 'bold' }}>
+              <Typography variant="body2" dir={isArabic ? 'rtl' : 'ltr'} sx={{ color: COLORS.primary, fontWeight: 'bold' }}>
                {t('selectedFiles')}
               </Typography>
               {files.map((file) => (
