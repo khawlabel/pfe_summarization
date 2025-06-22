@@ -130,8 +130,9 @@ const Register = () => {
     } else if (auth.isSuccessregister) {
       setShowSuccess(true);
       setShowError(false);
-       }
-  }, [auth.isErrorregister, auth.isSuccessregister, dispatch]);
+    }
+  }, [auth.isErrorregister, auth.isSuccessregister, auth.messageregister,dispatch]);
+
 
    const schema = yup.object().shape({
       firstname: yup.string().required(t("required_field")),
