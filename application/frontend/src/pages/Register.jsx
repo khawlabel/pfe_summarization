@@ -152,6 +152,7 @@ const Register = () => {
       validationSchema: schema,
       onSubmit: (values) => {
         setShowError(false); // Cache l'erreur précédente
+        dispatch(resetRegister())
         dispatch(register(values));
       },
 
