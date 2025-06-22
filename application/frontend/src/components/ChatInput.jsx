@@ -14,8 +14,11 @@ import axios from "axios";
 import { useNavigate } from 'react-router-dom';  // si tu utilises react-router
 import { useDispatch, useSelector } from 'react-redux';
 import { reset } from '../features/files/filesSlice';
+import { useTranslation } from 'react-i18next';
 
 const ChatInput = ({ onSend, onReset ,isResponding}) => {
+  const { t,i18n } = useTranslation();
+
   const [message, setMessage] = React.useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();  // Hook pour redirection
@@ -86,7 +89,23 @@ const ChatInput = ({ onSend, onReset ,isResponding}) => {
   
         }}
       >
-        <Tooltip title="Réinitialiser pour résumer de nouveaux fichiers" arrow placement="top">
+    <Tooltip 
+      title={
+        <Box
+          sx={{
+            fontSize: i18n.language === 'ar' ? '0.9rem' : '0.75rem',
+            wordSpacing: i18n.language === 'ar' ? '0.1em' : 'normal',
+            direction: i18n.language === 'ar' ? 'rtl' : 'ltr',
+            textAlign: i18n.language === 'ar' ? 'right' : 'left',
+            padding: '3px 7px',
+          }}
+        >
+          {t('reset_tooltip')}
+        </Box>
+      }
+      arrow
+      placement="top"
+    >
           <IconButton
             onClick={handleReset}
             sx={{
@@ -105,7 +124,7 @@ const ChatInput = ({ onSend, onReset ,isResponding}) => {
         <TextField
           fullWidth
           variant="standard"
-          placeholder="Envoyer un message..."
+          placeholder={t('input_placeholder')}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={(e) => {

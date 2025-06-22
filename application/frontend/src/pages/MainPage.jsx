@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, useTheme, useMediaQuery, Avatar, Typography, Stack, Paper } from '@mui/material';
+import { Box, useTheme, useMediaQuery, Avatar, Typography, Stack, Paper, IconButton } from '@mui/material';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import ChatInput from '../components/ChatInput';
@@ -11,9 +11,24 @@ import { ThemeContext } from '../ThemeContext'; // ajuste le chemin
 import { useContext } from 'react';
 import {GENERATE_TITRE_FR_URL,GENERATE_SUMMARY_FR_URL,GENERATE_TITRE_AR_URL,GENERATE_SUMMARY_AR_URL,CHAT_URL} from "../routes/constants"
 
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+
+import dz from '../images/flags/algeria.webp';
+import en from '../images/flags/uk.webp'; 
+import fr from '../images/flags/france.png'; 
+
+import { useTranslation } from 'react-i18next';
+
 
 const MainPage = () => {
-  const { mode, toggleTheme } = useContext(ThemeContext);
+   const { i18n } = useTranslation();
+    const { t } = useTranslation();
+  
+    const changeLang = (langCode) => {
+      i18n.changeLanguage(langCode);
+    };
+  const { mode } = useContext(ThemeContext);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isFrenchReady, setIsFrenchReady] = useState(false);
@@ -26,8 +41,42 @@ const MainPage = () => {
   const [arabicSummary, setArabicSummary] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResponding, setIsResponding] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+  
+  
+  const handleClick = (event) => {
+  setAnchorEl(event.currentTarget);
+};
 
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
 
+  const handleLangChange = (lang) => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem('language', lang); // ✅ persist the choice
+    handleClose();
+  };
+
+  const getFlagImage = (lang) => {
+    switch (lang) {
+      case 'en':
+        return en;
+      case 'fr':
+        return fr;
+      case 'ar':
+        return dz;
+      default:
+        return en; // par défaut anglais
+    }
+  };
+  
+  
+    const getLangLabel = (lang) => {
+      return t(`lang_${lang}`);
+    };
+  
 
 async function streamEndpoint(url, onChunk) {
   const response = await fetch(url);
@@ -96,6 +145,19 @@ useEffect(() => {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const isDarkMode = mode === 'dark';
+  const getColors = (isDarkMode) => ({
+        primary: '#1B998B',
+        secondry: isDarkMode ? '#ddd' : '#444',
+        background: isDarkMode ? '#121212' : '#ebf1f8',
+        paperBackground: isDarkMode ? '#3A3A3A' : '#ffffff',
+        buttonBackground: '#1B998B',
+        buttonHover: '#14766d',
+        textFieldBorder: isDarkMode ? '#254B46' : '#d0eae7',
+        textFieldFocusBorder: '#1B998B',
+        fileItemBackground: isDarkMode ? '#2c2c2c' : '#f4f6f9',
+      });
+  const COLORS = getColors(isDarkMode);
+
   
 
   // Message d'accueil automatique
@@ -103,7 +165,7 @@ useEffect(() => {
     setIsFrenchReady(true);
     setIsArabicReady(true);
 
-    const welcomeMessage = "👋 **Bienvenue !** Je suis votre assistant intelligent. Je suis ici pour répondre à vos questions sur les fichiers que vous avez soumis.";
+    const welcomeMessage = t('welcome_message');
     let index = 0;
     const interval = setInterval(() => {
       setMessages(prev => {
@@ -123,7 +185,8 @@ useEffect(() => {
     }, 20); // effet de streaming
 
     return () => clearInterval(interval);
-  }, []);
+  }, [i18n.language]); // ⬅️ IMPORTANT : dépendance sur la langue
+
 
 const handleSend = (msg) => {
   const userMessage = { from: 'user', text: msg };
@@ -192,7 +255,7 @@ const handleSend = (msg) => {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: isDarkMode ? theme.palette.background.default : '#f0f4f8' }}>
-      <Navbar onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen}  />
+      <Navbar onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen} onReset={() => setMessages([])}/>
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <Box
@@ -209,48 +272,63 @@ const handleSend = (msg) => {
 
         {/* TITRE */}
       <Box sx={{ mb: 6, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Typography
-            variant="h5"
+        <Typography
+          variant="h5"
+          sx={{
+            color: theme.palette.text.primary,
+            fontWeight: 'bold',
+            fontSize: { xs: '1.3rem', md: '1.7rem' },
+            letterSpacing: '0.5px',
+            textShadow: '2px 2px 4px rgba(0,0,0,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            mb: 1,
+            gap: 1,
+            flexDirection: i18n.language === 'ar' ? 'row-reverse' : 'row', // 🧠 clé ici
+          }}
+        >
+          {/* Partie texte traduisible (RTL si arabe) */}
+          <Box
             sx={{
-              color: theme.palette.text.primary,
-              fontWeight: 'bold',
-              fontSize: { xs: '1.3rem', md: '1.7rem' },
-              letterSpacing: '0.5px',
-              textShadow: '2px 2px 4px rgba(0,0,0,0.2)', // ombre plus visible
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-              mb: 1,
+              direction: i18n.language === 'ar' ? 'rtl' : 'ltr',
+              display: 'inline-block',
             }}
           >
-            Bienvenue sur&nbsp;
+            {t('main_title_prefix')}
+          </Box>
+
+          {/* Partie SUM + image, reste à gauche */}
+          <Box
+            component="span"
+            sx={{
+              color: theme.palette.primary.main,
+              fontWeight: 700,
+              fontSize: 'inherit',
+              display: 'flex',
+              alignItems: 'center',
+              flexShrink: 0,
+            }}
+          >
+            Sum
             <Box
-              component="span"
+              component="img"
+              src={AI}
+              alt="AI"
               sx={{
-                color: theme.palette.primary.main,
-                fontWeight: 700,
-                fontSize: 'inherit',
-                display: 'flex',
-                alignItems: 'center',
+                height: '2.2rem',
+                width: 'auto',
+                ml: 0.5,
+                verticalAlign: 'middle',
+                position: 'relative',
+                top: '-8.3px',
               }}
-            >
-              Sum
-              <Box
-                component="img"
-                src={AI}
-                alt="AI"
-                sx={{
-                  height: '2.2rem',
-                  width: 'auto',
-                  ml: 0.5,
-                  verticalAlign: 'middle',
-                  position: 'relative',
-                  top: '-8.3px',
-                }}
-              />
-            </Box>
-          </Typography>
+            />
+          </Box>
+        </Typography>
+
+
 
           <Box
             sx={{
@@ -367,7 +445,7 @@ const handleSend = (msg) => {
  
               }}
             >
-              Analyse assistée — Discutez avec le bot
+              {t('chat_section_title')}
             </Typography>
             <Box
               sx={{
@@ -416,8 +494,12 @@ const handleSend = (msg) => {
                       fontSize: '1rem',
                       boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
                       wordBreak: 'break-word',
-                    }}
-                  >
+                      wordSpacing: msg.from === 'bot' && i18n.language === 'ar' ? '0.15em' : 'normal', // ✅ espace pour arabe
+                      fontSize: msg.from === 'bot' && i18n.language === 'ar' ? '1.1rem' : '1rem',
+                      direction: msg.from === 'bot' && i18n.language === 'ar' ? 'rtl' : 'ltr',         // ✅ sens RTL
+                      textAlign: msg.from === 'bot' && i18n.language === 'ar' ? 'right' : 'left',      // ✅ alignement
+                      }}
+                                    >
                     <ReactMarkdown>{msg.text}</ReactMarkdown>
                   </Paper>
 
@@ -442,6 +524,111 @@ const handleSend = (msg) => {
 
         />
       )}
+
+       {/* === Bouton flottant pour switch de langue === */}
+        <Box
+        sx={{
+          position: 'fixed',
+          bottom: 20,
+          left: 20,
+          zIndex: 9999,
+        }}
+      >
+        <IconButton
+          onClick={handleClick}
+          sx={{
+            width: 50,
+            height: 50,
+            backgroundColor: COLORS.buttonBackground,
+            borderRadius: '50%',
+            boxShadow: isDarkMode
+            ? '0 4px 10px rgba(0, 255, 255, 0.15)'
+            : '0 4px 10px rgba(0, 0, 0, 0.15)',
+          transition: 'all 0.3s ease',
+          opacity: 0.5, // ✅ légère transparence
+          transform: 'scale(1)', // ✅ état initial
+          '&:hover': {
+            backgroundColor: COLORS.buttonHover,
+           
+            opacity: 1, // ✅ plein visible au hover
+            },
+          }}
+        >
+          <Box
+        component="img"
+        src={getFlagImage(i18n.language)}
+        alt="flag"
+        sx={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          objectFit: 'cover',
+        }}
+      />
+      
+        </IconButton>
+      
+        <Menu
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleClose}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          sx={{
+            '& .MuiMenu-paper': {
+              backgroundColor: COLORS.paperBackground,
+              borderRadius: '12px',
+              boxShadow: isDarkMode
+                ? '0px 8px 20px rgba(0, 255, 255, 0.08)'
+                : '0px 10px 30px rgba(0, 0, 0, 0.1)',
+              border: `1px solid ${COLORS.textFieldBorder}`,
+              padding: '8px 0',
+            },
+          }}
+        >
+          {[
+        { code: 'en', label: 'English', image: en },
+        { code: 'fr', label: 'Français', image: fr },
+        { code: 'ar', label: 'العربية', image: dz },
+      ].map(({ code, label, image }) => (
+      
+            <MenuItem
+        key={code}
+        onClick={() => handleLangChange(code)}
+        sx={{
+          color: COLORS.secondry,
+          fontWeight: i18n.language === code ? 'bold' : 'normal',
+          fontSize: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          paddingY: '8px',
+          paddingX: '16px',
+          gap: 1,
+          transition: 'transform 0.2s ease, background-color 0.2s ease',
+          '&:hover': {
+            transform: 'scale(1.05)',
+            backgroundColor: isDarkMode ? '#2a2a2a' : '#f5f5f5',
+          },
+        }}
+      >
+        <Box
+          component="img"
+          src={image}
+          alt={label}
+          sx={{
+            width: 24,
+            height: 24,
+            borderRadius: '4px',
+            mr: 1,
+            transition: 'transform 0.3s ease',
+          }}
+        />
+         <Typography>{getLangLabel(code)}</Typography>
+      </MenuItem>
+      
+          ))}
+        </Menu>
+      </Box>
     </Box>
   );
 };

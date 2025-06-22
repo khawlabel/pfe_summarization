@@ -21,6 +21,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import  { useContext } from 'react';
 import { ThemeContext } from '../ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const CustomMenuIcon = (props) => (
   <SvgIcon {...props} viewBox="0 0 100 80" width="24" height="24">
@@ -30,11 +31,12 @@ const CustomMenuIcon = (props) => (
   </SvgIcon>
 );
 
-const NavbarUploadFiles = ({ onMenuClick, sidebarOpen }) => {
+const NavbarUploadFiles = () => {
+  const { t } = useTranslation();
+
   const { mode, toggleTheme } = useContext(ThemeContext);
 
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -72,6 +74,7 @@ const NavbarUploadFiles = ({ onMenuClick, sidebarOpen }) => {
     localStorage.removeItem("user"); // Supprime l'utilisateur du stockage local  
     localStorage.removeItem("uploadDone");
     localStorage.removeItem("theme"); // Supprime le thème enregistré
+    localStorage.removeItem("language"); // ✅ Supprime la langue sélectionnée
     window.location.reload()
   };
 
@@ -154,7 +157,7 @@ const NavbarUploadFiles = ({ onMenuClick, sidebarOpen }) => {
               }}
             >
               <PaletteIcon sx={{ fontSize: 20, mr: 1 }} />
-              Thème
+                {t('theme')}
             </MenuItem>
 
             <MenuItem
@@ -168,7 +171,7 @@ const NavbarUploadFiles = ({ onMenuClick, sidebarOpen }) => {
               }}
             >
               <SettingsIcon sx={{ fontSize: 20, mr: 1 }} />
-              Paramètres
+                {t('settings')}
             </MenuItem>
 
             <Divider sx={{ my: 0.75, width: '90%', mx: 'auto' }} />
@@ -185,7 +188,7 @@ const NavbarUploadFiles = ({ onMenuClick, sidebarOpen }) => {
               }}
             >
               <LogoutIcon sx={{ fontSize: 23, mr: 1 }} />
-              Déconnexion
+                {t('logout')}
             </MenuItem>
           </Menu>
 
@@ -214,7 +217,7 @@ const NavbarUploadFiles = ({ onMenuClick, sidebarOpen }) => {
               selected={mode === 'light'}
               sx={{ borderRadius: 2 }}
             >
-              🌞 Mode clair
+                {t('lightMode')}
             </MenuItem>
 
             <MenuItem
@@ -226,7 +229,7 @@ const NavbarUploadFiles = ({ onMenuClick, sidebarOpen }) => {
               selected={mode === 'dark'}
               sx={{ borderRadius: 2 }}
             >
-              🌙 Mode sombre
+               {t('darkMode')}
             </MenuItem>
 
           </Menu>

@@ -1,5 +1,6 @@
 // Variables d'environnement
 const apiUrl = process.env.REACT_APP_BACKEND_HOST;
+console.log(apiUrl)
 
 // URLs des API
 export const LOGIN_URL = `${apiUrl}/login`;

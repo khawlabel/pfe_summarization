@@ -1,6 +1,7 @@
 
 import {
   AppBar,
+  Button,
   Box,
   IconButton,
   Toolbar,
@@ -16,11 +17,15 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PaletteIcon from '@mui/icons-material/Palette';
-import React, { useEffect,useState } from 'react';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import { useEffect,useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import  { useContext } from 'react';
 import { ThemeContext } from '../ThemeContext';
+import { reset } from '../features/files/filesSlice';
+import { useTranslation } from 'react-i18next';
+
 
 const CustomMenuIcon = (props) => (
   <SvgIcon {...props} viewBox="0 0 100 80" width="24" height="24">
@@ -30,16 +35,20 @@ const CustomMenuIcon = (props) => (
   </SvgIcon>
 );
 
-const Navbar = ({ onMenuClick, sidebarOpen }) => {
+const Navbar = ({ onMenuClick, sidebarOpen, onReset }) => {
+  const { t } = useTranslation();
+  
   const { mode, toggleTheme } = useContext(ThemeContext);
 
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
-
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const [themeAnchorEl, setThemeAnchorEl] = useState(null);
   const themeMenuOpen = Boolean(themeAnchorEl);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  const { isSuccessreset } = useSelector(state => state.files);
+  
+  
   
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -71,8 +80,29 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
     localStorage.removeItem("user"); // Supprime l'utilisateur du stockage local  
     localStorage.removeItem("uploadDone");
     localStorage.removeItem("theme"); // Supprime le thème enregistré
+    localStorage.removeItem("language"); // ✅ Supprime la langue sélectionnée
     window.location.reload()
   };
+
+  const handleReset = async () => {
+          try {
+            await dispatch(reset()); // Appel API
+            setShouldRedirect(true); // Marquer pour redirection après succès
+          } catch (error) {
+            console.error("Erreur lors de la réinitialisation :", error);
+          }
+        };
+
+    useEffect(() => {
+            if (isSuccessreset && shouldRedirect) {
+              localStorage.setItem("uploadDone", "false");
+    
+              setTimeout(() => {
+               window.location.reload()
+              }, 500);
+            }
+          }, [isSuccessreset, shouldRedirect, navigate]);
+    
 
   return (
     <AppBar
@@ -128,7 +158,30 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
           <span style={{ color: theme.palette.secondary.main }}>AI</span>
         </Typography>
 
+
         <Box>
+          <Button
+          onClick={handleReset}
+          startIcon={<RestartAltIcon />}
+          variant="contained"
+          sx={{
+            color: mode === 'dark' ? '#f28b82' : '#f67e7d',
+            backgroundColor: mode === 'dark' ? '#3a2a2a' : '#fceeee',
+            marginRight: 2,
+            marginTop: 0.2,
+            padding: '8px 16px',
+            textTransform: 'none',
+            fontWeight: 'bold',
+            fontSize: '0.9rem',
+            borderRadius: '8px',
+            '&:hover': {
+              backgroundColor: mode === 'dark' ? '#593636' : '#fbd2d2',
+            },
+          }}
+        >
+                 {t('restart')}
+        </Button>
+
           <IconButton
             size="large"
             edge="end"
@@ -174,7 +227,7 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
               }}
             >
               <PaletteIcon sx={{ fontSize: 20, mr: 1 }} />
-              Thème
+               {t('theme')}
             </MenuItem>
 
             <MenuItem
@@ -188,7 +241,7 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
               }}
             >
               <SettingsIcon sx={{ fontSize: 20, mr: 1 }} />
-              Paramètres
+              {t('settings')}
             </MenuItem>
 
             <Divider sx={{ my: 0.75, width: '90%', mx: 'auto' }} />
@@ -205,7 +258,7 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
               }}
             >
               <LogoutIcon sx={{ fontSize: 23, mr: 1 }} />
-              Déconnexion
+                {t('logout')}
             </MenuItem>
           </Menu>
 
@@ -234,7 +287,7 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
               selected={mode === 'light'}
               sx={{ borderRadius: 2 }}
             >
-              🌞 Mode clair
+                {t('lightMode')}
             </MenuItem>
 
             <MenuItem
@@ -246,7 +299,7 @@ const Navbar = ({ onMenuClick, sidebarOpen }) => {
               selected={mode === 'dark'}
               sx={{ borderRadius: 2 }}
             >
-              🌙 Mode sombre
+                     {t('darkMode')}
             </MenuItem>
 
           </Menu>

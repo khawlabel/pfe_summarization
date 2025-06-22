@@ -5,7 +5,10 @@ import {
   Box,
   Typography,
   Paper,
-  Alert
+  Alert,
+  Menu,
+  MenuItem,
+  IconButton
 } from '@mui/material';
 import { useFormik } from 'formik';
 import { useDispatch, useSelector } from 'react-redux';
@@ -13,6 +16,15 @@ import { login, resetLogin } from '../features/Auth/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 import { useLocation } from 'react-router-dom';
+
+import dz from '../images/flags/algeria.webp';
+import en from '../images/flags/uk.webp'; 
+import fr from '../images/flags/france.png'; 
+
+import { useTranslation } from 'react-i18next';
+import { ThemeContext } from '../ThemeContext'; // ajuste le chemin
+import { useContext } from 'react';
+
 
 const COLORS = {
   primary: '#1B998B',
@@ -27,6 +39,16 @@ const COLORS = {
 };
 
 const Login = () => {
+  const { i18n } = useTranslation();
+  const { t } = useTranslation();
+      
+  const changeLang = (langCode) => {
+          i18n.changeLanguage(langCode);
+        };
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+  const { mode } = useContext(ThemeContext);
+  const isDarkMode = mode === 'dark';
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const auth = useSelector((state) => state.auth);
@@ -41,6 +63,43 @@ const Login = () => {
 
 
   const location = useLocation();
+
+  
+    const handleClick = (event) => {
+      setAnchorEl(event.currentTarget);
+    };
+  
+      const handleClose = () => {
+        setAnchorEl(null);
+      };
+  
+      const handleLangChange = (lang) => {
+        i18n.changeLanguage(lang);
+        localStorage.setItem('language', lang); // ✅ persist the choice
+        handleClose();
+      };
+  
+      const getFlagImage = (lang) => {
+        switch (lang) {
+          case 'en':
+            return en;
+          case 'fr':
+            return fr;
+          case 'ar':
+            return dz;
+          default:
+            return en; // par défaut anglais
+        }
+      };
+      
+      
+        const getLangLabel = (lang) => {
+          return t(`lang_${lang}`);
+        };
+      
+      
+      const isArabic = i18n.language === 'ar';
+  
 
 
   
@@ -88,8 +147,8 @@ const Login = () => {
   };
 
   const schema = yup.object().shape({
-    email: yup.string().email("L’adresse e-mail doit être valide").required("Ce champ est obligatoire"),
-    password: yup.string().required("Ce champ est obligatoire"),
+    email: yup.string().email(t("invalid_email")).required(t("required_field")),
+    password: yup.string().required(t("required_field")),
   });
 
   const formik = useFormik({
@@ -140,7 +199,7 @@ const Login = () => {
               variant="h5"
               sx={{ color: COLORS.primary, fontWeight: 'bold', marginBottom: 2 }}
             >
-              Connexion
+              {t("login_title")}
             </Typography>
 
             {showError && (
@@ -155,7 +214,7 @@ const Login = () => {
                 required
                 fullWidth
                 id="email"
-                label="Email"
+                label={t("login_email")}
                 name="email"
                 type="email"
                 autoComplete="off"
@@ -172,7 +231,7 @@ const Login = () => {
                 required
                 fullWidth
                 name="password"
-                label="Mot de passe"
+                label={t("login_password")}
                 type="password"
                 id="password"
                 autoComplete="new-password"
@@ -199,23 +258,153 @@ const Login = () => {
                   padding: '10px 0',
                 }}
               >
-                {auth.isLoadinglogin ? "Connexion..." : "Se connecter"}
+                {auth.isLoadinglogin ?  t("login_loading") : t("login_submit")}
+
               </Button>
             </Box>
           </Box>
           <Typography variant="body2" align="center" sx={{ color: COLORS.secondry, fontWeight: 'normal', fontFamily: 'lato' }}>
-            Vous n'avez pas de compte ?{' '}
+            {t("login_no_account")}{" "}
             <Link
               to="/register"
               style={{ color: COLORS.primary, fontWeight: 'bold', textDecoration: 'none', fontFamily: 'lato' }}
               onMouseOver={(e) => (e.target.style.textDecoration = 'underline')}
               onMouseOut={(e) => (e.target.style.textDecoration = 'none')}
             >
-              inscrivez-vous ici
+               {t("login_register_here")}
             </Link>
           </Typography>
         </Box>
       </Paper>
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 10,
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+          }}
+        >
+          <Typography
+            align="center"
+            sx={{
+              color: '#cccccc',
+              fontSize: '0.95rem',
+              fontFamily: `'Cormorant Garamond', serif`, // écriture élégante
+              letterSpacing: '0.5px',
+              fontStyle: 'italic',
+              fontWeight: 500,
+              fontSize: isArabic ? '0.8rem' : '0.rem', 
+            }}
+          >
+            {t("copyright")} © {new Date().getFullYear()} {t("all_rights_reserved")}
+          </Typography>
+        </Box>
+              {/* === Bouton flottant pour switch de langue === */}
+        <Box
+        sx={{
+          position: 'fixed',
+          bottom: 20,
+          left: 20,
+          zIndex: 9999,
+        }}
+      >
+        <IconButton
+          onClick={handleClick}
+          sx={{
+            width: 50,
+            height: 50,
+            backgroundColor: COLORS.buttonBackground,
+            borderRadius: '50%',
+            boxShadow: isDarkMode
+            ? '0 4px 10px rgba(0, 255, 255, 0.15)'
+            : '0 4px 10px rgba(0, 0, 0, 0.15)',
+          transition: 'all 0.3s ease',
+          opacity: 0.5, // ✅ légère transparence
+          transform: 'scale(1)', // ✅ état initial
+          '&:hover': {
+            backgroundColor: COLORS.buttonHover,
+           
+            opacity: 1, // ✅ plein visible au hover
+            },
+          }}
+        >
+          <Box
+        component="img"
+        src={getFlagImage(i18n.language)}
+        alt="flag"
+        sx={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          objectFit: 'cover',
+        }}
+      />
+      
+        </IconButton>
+      
+        <Menu
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleClose}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          sx={{
+            '& .MuiMenu-paper': {
+              backgroundColor: COLORS.paperBackground,
+              borderRadius: '12px',
+              boxShadow: isDarkMode
+                ? '0px 8px 20px rgba(0, 255, 255, 0.08)'
+                : '0px 10px 30px rgba(0, 0, 0, 0.1)',
+              border: `1px solid ${COLORS.textFieldBorder}`,
+              padding: '8px 0',
+            },
+          }}
+        >
+          {[
+        { code: 'en', label: 'English', image: en },
+        { code: 'fr', label: 'Français', image: fr },
+        { code: 'ar', label: 'العربية', image: dz },
+      ].map(({ code, label, image }) => (
+      
+            <MenuItem
+        key={code}
+        onClick={() => handleLangChange(code)}
+        sx={{
+          color: COLORS.secondry,
+          fontWeight: i18n.language === code ? 'bold' : 'normal',
+          fontSize: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          paddingY: '8px',
+          paddingX: '16px',
+          gap: 1,
+          transition: 'transform 0.2s ease, background-color 0.2s ease',
+          '&:hover': {
+            transform: 'scale(1.05)',
+            backgroundColor: isDarkMode ? '#2a2a2a' : '#f5f5f5',
+          },
+        }}
+      >
+        <Box
+          component="img"
+          src={image}
+          alt={label}
+          sx={{
+            width: 24,
+            height: 24,
+            borderRadius: '4px',
+            mr: 1,
+            transition: 'transform 0.3s ease',
+          }}
+        />
+         <Typography>{getLangLabel(code)}</Typography>
+      </MenuItem>
+      
+          ))}
+        </Menu>
+      </Box>
+
     </Box>
   );
 };

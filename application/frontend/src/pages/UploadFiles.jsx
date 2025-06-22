@@ -3,9 +3,6 @@ import { Box, useTheme, Typography, Paper, Button, IconButton } from '@mui/mater
 import { useDropzone } from 'react-dropzone';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CloseIcon from '@mui/icons-material/Close';  // Icone pour retirer un fichier
-import ChatBotGifClair from '../images/Chatbot_clair.gif';
-import ChatBotGifSombre from '../images/Chat_bot.gif';
-import Arrow from '../images/arrow (3).png'; // Import de l'image de la flèche
 import BackgroundDescription_clair from '../images/shape_clair.png';
 import BackgroundDescription_sombre from '../images/shape_sombre.png';
 import { uploadfiles } from '../features/files/filesSlice';
@@ -16,13 +13,62 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Navbar from '../components/NavbarUploadFiles';
 import { ThemeContext } from '../ThemeContext'; // ajuste le chemin
 import { useContext } from 'react';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+
+import dz from '../images/flags/algeria.webp';
+import en from '../images/flags/uk.webp'; 
+import fr from '../images/flags/france.png'; 
 
 
+import { useTranslation } from 'react-i18next';
 
 const UploadFiles = () => {
-  const { mode, toggleTheme } = useContext(ThemeContext);
 
-  const theme = useTheme();
+  const { i18n } = useTranslation();
+  const { t } = useTranslation();
+
+  const changeLang = (langCode) => {
+    i18n.changeLanguage(langCode);
+  };
+
+  const [anchorEl, setAnchorEl] = useState(null);
+const open = Boolean(anchorEl);
+
+const handleClick = (event) => {
+  setAnchorEl(event.currentTarget);
+};
+
+const handleClose = () => {
+  setAnchorEl(null);
+};
+
+const handleLangChange = (lang) => {
+  i18n.changeLanguage(lang);
+  localStorage.setItem('language', lang); // ✅ persist the choice
+  handleClose();
+};
+
+const getFlagImage = (lang) => {
+  switch (lang) {
+    case 'en':
+      return en;
+    case 'fr':
+      return fr;
+    case 'ar':
+      return dz;
+    default:
+      return en; // par défaut anglais
+  }
+};
+
+
+  const getLangLabel = (lang) => {
+    return t(`lang_${lang}`);
+  };
+
+  const { mode } = useContext(ThemeContext);
+
   const isDarkMode = mode === 'dark';
   const getColors = (isDarkMode) => ({
         primary: '#1B998B',
@@ -63,6 +109,7 @@ const UploadFiles = () => {
       'application/pdf': ['.pdf'],
       'audio/*': ['.mp3', '.wav', '.ogg', '.flac', '.m4a'],
       'video/*': ['.mp4', '.avi', '.mov', '.mkv'],
+      'image/*': ['.png', '.jpg', '.jpeg', '.bmp', '.tiff'],
     },
     onDrop: (acceptedFiles) => {
       setFiles((prevFiles) => [...prevFiles, ...acceptedFiles]);
@@ -96,130 +143,98 @@ const UploadFiles = () => {
   };
 
 
-  return (
+return (
   <Box
     sx={{
       minHeight: '100vh',
       backgroundColor: COLORS.background,
       display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      px: 4,
-      py: 10,
+      flexDirection: 'column',
     }}
   >
-       <Navbar />
-    
+    <Navbar />
+
     <Box
       sx={{
         display: 'flex',
-        flexDirection: 'column',
-        width: '100%',
-        maxWidth: '1200px',
+        flexDirection: { xs: 'column', md: 'row' },
+        alignItems: 'center',
+        justifyContent: 'center',
         pt: 5,
+        px: 4,
+        py: 8,
+        gap: 6,
+        flex: 1,
+          mt: '45px', // Ajoute ça ici si Navbar est en fixed
       }}
     >
-      {/* ➤ Ligne 1 : description + gif */}
+      {/* === Description Gauche === */}
+         {/* === backgroundImage: isDarkMode
+            ? `url(${BackgroundDescription_sombre})`
+            : `url(${BackgroundDescription_clair})`,=== */}
       <Box
         sx={{
+          flex: 1,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          padding: 4,
+          borderRadius: '20px',
+          textAlign: 'justify',
           display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          gap: 6,
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          height: '100%',
+          maxWidth: '700px',
         }}
       >
-        {/* Colonne gauche : Description */}
-        <Box
-          sx={{
-            width: { xs: '90%', md: '70%' },
-            textAlign: 'justify',
-              marginLeft: { xs: 0 , md: 3 },
-                backgroundImage: isDarkMode? `url(${BackgroundDescription_sombre})`: `url(${BackgroundDescription_clair})`,
-                backgroundSize: '95%',
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'center',
-                padding: 3,
-                
-          }}
-        >
         <Typography
-              variant="h3"
-              sx={{
-                fontWeight: 'bold',
-                fontSize: { xs: '2.2rem', md: '3rem' },
-                color: isDarkMode ? COLORS.primary : '#444',
-                mb: 2,
-                lineHeight: 1.2,
-              }}
-            >
-              <span style={{
-                color: '#f67e7d',
-                textTransform: 'uppercase',
-                fontStyle: 'italic',
-                letterSpacing: '0.5px',
-                
-              }}>
-                Résumez
-              </span>{' '}
-              vos contenus en un clin d’œil
-            </Typography>
-
-
-          <Typography
-            variant="body1"
-            sx={{
-              fontSize: '1.2rem',
-              color: COLORS.secondry,
-              lineHeight: 2,
-              fontWeight: 500,
-            }}
-          >
-            Transformez vos <strong>PDF</strong>, <strong>audios</strong> ou <strong>vidéos</strong> en résumés instantanés, 
-            <strong> en français ou en arabe</strong>, prêts à l’emploi.<br />
-            <span style={{ fontStyle: 'italic' }}>
-              Gagnez du temps, boostez votre productivité .
-            </span><br />
-            Et si vous avez des questions, <strong>discutez directement avec votre contenu</strong> grâce à notre IA intelligente !<br />
-        
-            <strong>Déposez simplement votre fichier ci-dessous </strong> – notre IA fait le reste !
-          </Typography>
-
-        </Box>
-
-        {/* Colonne droite : GIF */}
-        <Box
+          variant="h3"
+          dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}
           sx={{
-            width: { xs: '100%', md: '35%' },
-            marginRight: { xs: 0 , md: 5 },
-            marginTop: { xs: 0 , md: 4 },
-            display: 'flex',
-            justifyContent: 'center',
+            fontWeight: 'bold',
+            fontSize: { xs: '2rem', md: '3rem' },
+            color: isDarkMode ? COLORS.primary : '#444',
+            mb: 2,
+            lineHeight: 1.2,
+            textAlign: i18n.language === 'ar' ? 'right' : 'left',
           }}
         >
-         <img
-           src= {isDarkMode ? ChatBotGifSombre : ChatBotGifClair}
-             alt="Illustration IA"
-            style={{ width: '100%', maxWidth: '320px' }}
-          
-          />
-        </Box>
-      </Box>
-       <Box
-        >
-         <img
-            src={Arrow}
-            alt="Fleche"
-            style={{ width: '100%', maxWidth: '150px', marginLeft: 'auto', marginRight: 'auto', display: 'block' }}
-          />
-        </Box>
+          <span style={{
+            color: '#f67e7d',
+            textTransform: 'uppercase',
+            fontStyle: 'italic',
+            letterSpacing: '0.5px',
+          }}>
+            {t('summarize')}
+          </span>{' '}
+          {t('yourContentInstantly')}
+        </Typography>
 
-      {/* ➤ Ligne 2 : Dropzone centrée */}
+        <Typography
+          variant="body1"
+          dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}
+          sx={{
+            fontSize: i18n.language === 'ar' ? '1.4rem' : '1.2rem',
+            color: COLORS.secondry,
+            lineHeight: i18n.language === 'ar' ? 2 : 2,
+            fontWeight: 500,
+            textAlign: i18n.language === 'ar' ? 'right' : 'left',
+            wordSpacing: i18n.language === 'ar' ? '3px' : 'normal',
+            letterSpacing: i18n.language === 'ar' ? '0.8px' : 'normal',
+          }}
+          dangerouslySetInnerHTML={{ __html: t('description') }}
+        />
+
+      </Box>
+
+      {/* === Dropzone Droite === */}
       <Box
         sx={{
+          flex: 1,
+          maxWidth: '450px',
+          width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          marginTop: 4,
         }}
       >
         <Paper
@@ -229,51 +244,46 @@ const UploadFiles = () => {
             padding: 6,
             background: COLORS.paperBackground,
             textAlign: 'center',
-            boxShadow: isDarkMode
-                ? '0 4px 15px rgba(100, 255, 255, 0.08)'  // glow très léger cyan clair
-                : '0px 15px 45px rgba(0, 0, 0, 0.15)',
             width: '100%',
-            maxWidth: 600,
-            overflowY: 'auto',
+            boxShadow: isDarkMode
+              ? '0 4px 15px rgba(100, 255, 255, 0.08)'
+              : '0px 15px 45px rgba(0, 0, 0, 0.15)',
           }}
         >
-          {/* Zone de drop */}
-          <Box
-            {...getRootProps()}
-          sx={{
-                border: `2px dashed ${COLORS.primary}`,
-                borderRadius: '20px',
-                p: 4,
-                cursor: 'pointer',
-                backgroundColor: isDarkMode ? '#2c2c2c' : '#fff', // 🔧 ICI : fond plus sombre en mode dark
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                   backgroundColor: isDarkMode ? '#2C3432' : '#f1fdfb', // 🔧 ICI aussi pour le hover
-                   borderColor: COLORS.buttonHover,
-                },
-              }}
-
-          >
+          <Box {...getRootProps()}
+            sx={{
+              border: `2px dashed ${COLORS.primary}`,
+              borderRadius: '20px',
+              p: 4,
+              cursor: 'pointer',
+              backgroundColor: isDarkMode ? '#2c2c2c' : '#fff',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: isDarkMode ? '#2C3432' : '#f1fdfb',
+                borderColor: COLORS.buttonHover,
+              },
+            }}>
             <input {...getInputProps()} />
             <UploadFileIcon sx={{ fontSize: 40, color: COLORS.primary, mb: 1 }} />
             <Typography variant="body1" fontWeight="bold" sx={{ mb: 1 }}>
-              Cliquez ou glissez vos fichiers ici
+             { t('dropzoneTitle')}
             </Typography>
-            <Typography variant="body2" sx={{ color: COLORS.secondry }}>
-              Formats supportés : <strong>.pdf, .mp3, .wav, .ogg, .flac, .m4a,.mp4, .avi, .mov, .mkv</strong>
-            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: COLORS.secondry }}
+              dangerouslySetInnerHTML={{ __html: t('dropzoneFormats') }}
+            />
           </Box>
 
-          {/* Fichiers sélectionnés */}
           {files.length > 0 && (
             <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               <Typography variant="body2" sx={{ color: COLORS.primary, fontWeight: 'bold' }}>
-                Fichiers sélectionnés :
+               {t('selectedFiles')}
               </Typography>
               {files.map((file) => (
                 <Box
                   key={file.name}
-                 sx={{
+                  sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -281,12 +291,7 @@ const UploadFiles = () => {
                     padding: 1.5,
                     borderRadius: '12px',
                     border: `1px solid ${COLORS.textFieldBorder}`,
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
-                    },
                   }}
-
                 >
                   <Typography variant="body2" sx={{ color: COLORS.secondry }}>
                     {file.name}
@@ -297,20 +302,17 @@ const UploadFiles = () => {
                 </Box>
               ))}
 
-
-
               {isLoadinguploadefiles ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-               <CircularProgress size={32} sx={{ color: '#0d5b53' }} />
-
+                  <CircularProgress size={32} sx={{ color: '#0d5b53' }} />
                 </Box>
               ) : isSuccessuploadefiles ? (
                 <Alert severity="success" sx={{ mt: 3 }}>
-                  Fichiers uploadés avec succès !
+                  {t('uploadSuccess')}
                 </Alert>
               ) : isErroruploadefiles ? (
                 <Alert severity="error" sx={{ mt: 3 }}>
-                  Erreur lors de l’upload : {messageuploadefiles}
+                {t('uploadError')} {messageuploadefiles}
                 </Alert>
               ) : (
                 <Button
@@ -334,30 +336,136 @@ const UploadFiles = () => {
                   }}
                   onClick={handleSubmit}
                 >
-                  Soumettre
+                 {t('submit')}
                 </Button>
               )}
-
             </Box>
           )}
         </Paper>
-           {/* 🔻 ALERTE fichiers rejetés ici */}
-        {rejectedFiles.length > 0 && (
-          <Box sx={{ mt: 2, width: '100%', maxWidth: 600 }}>
-            <Alert severity="error">
-              Les fichiers suivants ne sont pas acceptés :
-              <ul style={{ margin: 0, paddingLeft: '1.2em' }}>
-                {rejectedFiles.map((fileName, index) => (
-                  <li key={index}>{fileName}</li>
-                ))}
-              </ul>
-            </Alert>
-          </Box>
-        )}
+         {/* 🔻 ALERTE fichiers rejetés ici */}
+                {rejectedFiles.length > 0 && (
+                  <Box sx={{ mt: 2, width: '100%', maxWidth: 600 }}>
+                    <Alert severity="error">
+                     {t('rejectedFilesAlert')}
+                      <ul style={{ margin: 0, paddingLeft: '1.2em' }}>
+                        {rejectedFiles.map((fileName, index) => (
+                          <li key={index}>{fileName}</li>
+                        ))}
+                      </ul>
+                    </Alert>
+                  </Box>
+                )}
       </Box>
     </Box>
+    {/* === Bouton flottant pour switch de langue === */}
+  <Box
+  sx={{
+    position: 'fixed',
+    bottom: 20,
+    left: 20,
+    zIndex: 9999,
+  }}
+>
+  <IconButton
+    onClick={handleClick}
+    sx={{
+      width: 50,
+      height: 50,
+      backgroundColor: COLORS.buttonBackground,
+      borderRadius: '50%',
+      boxShadow: isDarkMode
+      ? '0 4px 10px rgba(0, 255, 255, 0.15)'
+      : '0 4px 10px rgba(0, 0, 0, 0.15)',
+    transition: 'all 0.3s ease',
+    opacity: 0.5, // ✅ légère transparence
+    transform: 'scale(1)', // ✅ état initial
+    '&:hover': {
+      backgroundColor: COLORS.buttonHover,
+     
+      opacity: 1, // ✅ plein visible au hover
+      },
+    }}
+  >
+    <Box
+  component="img"
+  src={getFlagImage(i18n.language)}
+  alt="flag"
+  sx={{
+    width: 28,
+    height: 28,
+    borderRadius: '50%',
+    objectFit: 'cover',
+  }}
+/>
+
+  </IconButton>
+
+  <Menu
+    anchorEl={anchorEl}
+    open={open}
+    onClose={handleClose}
+    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+    transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+    sx={{
+      '& .MuiMenu-paper': {
+        backgroundColor: COLORS.paperBackground,
+        borderRadius: '12px',
+        boxShadow: isDarkMode
+          ? '0px 8px 20px rgba(0, 255, 255, 0.08)'
+          : '0px 10px 30px rgba(0, 0, 0, 0.1)',
+        border: `1px solid ${COLORS.textFieldBorder}`,
+        padding: '8px 0',
+      },
+    }}
+  >
+    {[
+  { code: 'en', label: 'English', image: en },
+  { code: 'fr', label: 'Français', image: fr },
+  { code: 'ar', label: 'العربية', image: dz },
+].map(({ code, label, image }) => (
+
+      <MenuItem
+  key={code}
+  onClick={() => handleLangChange(code)}
+  sx={{
+    color: COLORS.secondry,
+    fontWeight: i18n.language === code ? 'bold' : 'normal',
+    fontSize: '1rem',
+    display: 'flex',
+    alignItems: 'center',
+    paddingY: '8px',
+    paddingX: '16px',
+    gap: 1,
+    transition: 'transform 0.2s ease, background-color 0.2s ease',
+    '&:hover': {
+      transform: 'scale(1.05)',
+      backgroundColor: isDarkMode ? '#2a2a2a' : '#f5f5f5',
+    },
+  }}
+>
+  <Box
+    component="img"
+    src={image}
+    alt={label}
+    sx={{
+      width: 24,
+      height: 24,
+      borderRadius: '4px',
+      mr: 1,
+      transition: 'transform 0.3s ease',
+    }}
+  />
+   <Typography>{getLangLabel(code)}</Typography>
+</MenuItem>
+
+    ))}
+  </Menu>
+</Box>
+
+
   </Box>
 );
+
 
 };
 
