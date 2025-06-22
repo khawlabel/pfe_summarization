@@ -76,6 +76,7 @@ const MainPage = () => {
     const getLangLabel = (lang) => {
       return t(`lang_${lang}`);
     };
+    const isArabic = i18n.language === 'ar';
   
 
 async function streamEndpoint(url, onChunk) {
@@ -356,7 +357,7 @@ const handleSend = (msg) => {
             borderLeft: `6px solid ${theme.palette.primary.main}`,
           }}
         >
-          <h2 style={{  color: theme.palette.primary.main, marginBottom: '12px' }}>Résumé en Français</h2>
+          <h2 dir={isArabic ? 'rtl' : 'ltr'} style={{  color: theme.palette.primary.main, marginBottom: '12px' }}>{t('french_summary')}</h2>
         <ReactMarkdown
           components={{
             p: ({ node, ...props }) => (
@@ -383,6 +384,7 @@ const handleSend = (msg) => {
 
         {/* Résumé en Arabe */}
         <Box
+        
           sx={{
             backgroundColor: theme.palette.mode === 'dark' ? '#1a1a1a': '#f9f9f9',
             borderRadius: 4,
@@ -393,11 +395,10 @@ const handleSend = (msg) => {
             pb: 4,
             mb: 4,
             borderRight: `6px solid ${theme.palette.secondary.main}`,
-            direction: 'rtl',
             textAlign: 'justify',
           }}
         >
-          <h2 style={{ color: theme.palette.secondary.main, marginBottom: '12px' }}>الملخص باللغة العربية</h2>
+          <h2 dir={isArabic ? 'rtl' : 'ltr'} style={{ color: theme.palette.secondary.main, marginBottom: '12px' }}>{t('arabic_summary')}</h2>
          <ReactMarkdown
             components={{
               p: ({ node, ...props }) => (
@@ -412,7 +413,7 @@ const handleSend = (msg) => {
                     direction: 'rtl',
                     textAlign: 'justify',
                     wordBreak: 'break-word',
-                      wordSpacing: '0.12em', // 👈 Ajoute de l’espace entre les mots
+                    wordSpacing: '0.12em', // 👈 Ajoute de l’espace entre les mots
       
                   }}
                   {...props}

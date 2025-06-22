@@ -20,6 +20,8 @@
   "restart": "Restart",
   "reset_tooltip": "Reset to summarize new files",
   "input_placeholder": "Send a message...",
+  "french_summary": "French summary",
+  "arabic_summary": "Arabic summary",
   "welcome_message": "👋 **Welcome!** I am your smart assistant. I'm here to answer your questions about the files you submitted.",
   "main_title_prefix": "Welcome to",
   "chat_section_title": "Assisted analysis — Chat with the bot",
