@@ -23,6 +23,10 @@ from qdrant_client.http.models import Filter, FilterSelector
 from fastapi.middleware.cors import CORSMiddleware
 from numpy import dot
 import numpy as np
+from fastapi import Header
+from translation import translations
+
+
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -70,6 +74,13 @@ class ChatRequest(BaseModel):
 
 
 # =============== Fonctions utilitaires ===============
+
+def get_accept_language(accept_language: str = Header(default="fr")):
+    return accept_language.split(",")[0]  # Prend la première langue si plusieurs
+
+def t(key: str, lang: str = "fr") -> str:
+    return translations.get(key, {}).get(lang, translations.get(key, {}).get("fr", key))
+
 def get_db():
     return sqlite3.connect(DB_PATH)
 
@@ -96,16 +107,15 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Token invalide.")
 
-def validate_password(password: str):
+def validate_password(password: str,language: str = Depends(get_accept_language)):
     if len(password) < 8:
-        raise HTTPException(status_code=400, detail="Mot de passe : min. 8 caractères.")
+        raise HTTPException(status_code=400, detail=t("password_too_short", language))
     if not any(c.isupper() for c in password):
-        raise HTTPException(status_code=400, detail="Mot de passe : min. une majuscule.")
+        raise HTTPException(status_code=400, detail=t("password_missing_uppercase",language))
     if not any(c.islower() for c in password):
-        raise HTTPException(status_code=400, detail="Mot de passe : min. une minuscule.")
-    if not any(c in "!@#$%^&*(),.?\":{}|<>" for c in password):
-        raise HTTPException(status_code=400, detail="Mot de passe : min. un caractère spécial.")
-
+        raise HTTPException(status_code=400, detail=t("password_missing_lowercase",language))
+    if not any(c in "!@#$%^&+-&*(),.?\":{}|<>" for c in password):
+        raise HTTPException(status_code=400, detail=t("password_missing_special",language))
 
 def send_verification_email(email: str, token: str):
     import uuid
@@ -511,18 +521,19 @@ async def generate_titre_stream():
 
 
 @app.post("/register")
-def register(request: RegisterRequest):
-    validate_password(request.password)
+def register(request: RegisterRequest, language: str = Depends(get_accept_language)):
+    print("📥 Langue reçue dans l'en-tête:", language)  # 🔍 Debug ici
+    validate_password(request.password, language)
 
     if request.role not in ("admin", "user"):
-        raise HTTPException(status_code=400, detail="Rôle invalide. Doit être 'admin' ou 'user'.")
+        raise HTTPException(status_code=400, detail=t("invalid_role", language))
 
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE email = ?", (request.email,))
     if cursor.fetchone():
         conn.close()
-        raise HTTPException(status_code=400, detail="Email déjà utilisé.")
+        raise HTTPException(status_code=400, detail=t("email_already_used", language))
 
     hashed_pwd = get_password_hash(request.password)
     cursor.execute('''
@@ -538,17 +549,16 @@ def register(request: RegisterRequest):
     send_verification_email(request.email, token)
 
     conn.close()
-    return {"message": "Utilisateur créé. Vérifiez votre boîte mail pour activer votre compte.",
-            "token":token}
+    return {"message": t("user_created_check_email", language), "token": token}
 
 # ==================== Route de vérification ====================
 
 @app.get("/verify-email/{token}")
-def verify_email(token: str):
+def verify_email(token: str, language: str = Depends(get_accept_language)):
     try:
         email = serializer.loads(token, salt="email-confirm", max_age=3600)  # 1 heure
     except Exception:
-        raise HTTPException(status_code=400, detail="Lien invalide ou expiré.")
+        raise HTTPException(status_code=400, detail=t("invalid_or_expired_token", language))
 
     conn = get_db()
     cursor = conn.cursor()
@@ -556,11 +566,11 @@ def verify_email(token: str):
     conn.commit()
     conn.close()
 
-    return {"message": "Email vérifié avec succès."}
+    return {"message": t("email_verified", language)}
 """
 """
 @app.post("/login")
-def login(request: LoginRequest):
+def login(request: LoginRequest, language: str = Depends(get_accept_language)):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
@@ -571,17 +581,17 @@ def login(request: LoginRequest):
     # Vérification si l'utilisateur existe et si le mot de passe est correct
     if not user or not verify_password(request.password, user[4]):
         conn.close()
-        raise HTTPException(status_code=400, detail="Email ou mot de passe incorrect.")
+        raise HTTPException(status_code=400, detail=t("invalid_email_or_password", language))
 
     # Vérification si le compte est bloqué
     if user[6]:  # bloc == True
         conn.close()
-        raise HTTPException(status_code=403, detail="Compte bloqué. Contactez un admin.")
+        raise HTTPException(status_code=403, detail=t("account_blocked", language))
 
     # Vérification si l'email est validé
     if not user[7]:  # is_verified == False
         conn.close()
-        raise HTTPException(status_code=400, detail="Email non vérifié. Veuillez vérifier votre boîte mail.")
+        raise HTTPException(status_code=400, detail=t("email_not_verified", language))
 
     # Si l'utilisateur est valide, créer un token JWT
     access_token = create_access_token(

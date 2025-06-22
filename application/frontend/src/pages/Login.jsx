@@ -203,7 +203,13 @@ const Login = () => {
             </Typography>
 
             {showError && (
-              <Alert severity="error" sx={{ mb: 2, width: '93%' }}>
+              <Alert  dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} severity="error" 
+              sx={{
+                      mb: 2, width: '93%',
+                      '& .MuiAlert-icon': {
+                        marginInlineEnd: '0.5em', // ajoute un espace entre l'icône et le texte
+                      },
+                    }} >
                 {auth.messagelogin}
               </Alert>
             )}
@@ -281,7 +287,6 @@ const Login = () => {
             component="footer"
             sx={{
               textAlign: 'center',
-             
             }}
           >
             <Typography

@@ -212,13 +212,25 @@ const Register = () => {
             </Typography>
                                     {/* Affichage de l'alerte d'erreur */}
                         {showError && (
-                          <Alert severity="error" sx={{ mb: 2, width: '93%' }}>
+                          <Alert dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} severity="error" 
+                           sx={{
+                      mb: 2, width: '93%',
+                      '& .MuiAlert-icon': {
+                        marginInlineEnd: '0.5em', // ajoute un espace entre l'icône et le texte
+                      },
+                    }} >
                             {auth.messageregister }
                           </Alert>
                         )}
 
                         {showSuccess && (
-                          <Alert severity="success" sx={{ mb: 2, width: '93%' }}>
+                          <Alert dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} severity="success" 
+                           sx={{
+                      mb: 2, width: '93%',
+                      '& .MuiAlert-icon': {
+                        marginInlineEnd: '0.5em', // ajoute un espace entre l'icône et le texte
+                      },
+                    }} >
                             {typeof auth.messageregister  === 'string'
                               ? auth.messageregister 
                               : t("register_success")}
