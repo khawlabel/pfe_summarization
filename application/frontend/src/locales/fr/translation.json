@@ -47,6 +47,10 @@
   "verification_title": "Compte vérifié !",
   "verification_success1": "Votre compte a été vérifié avec succès.",
   "verification_success2": "Vous pouvez maintenant accéder à toutes les fonctionnalités.",
-  "verification_login_button": "Se connecter maintenant"
+  "verification_login_button": "Se connecter maintenant",
+  "sidebar_history": "Historique",
+  "sidebar_doc_summary": "Résumé document .pdf",
+  "sidebar_audio_summary": "Résumé audio.m4a",
+  "sidebar_video_chat": "Discussion vidéo.mp4"
 
 }

@@ -47,5 +47,9 @@
   "verification_title": "تم التحقق من الحساب!",
   "verification_success1": "تم التحقق من حسابك بنجاح.",
   "verification_success2": "يمكنك الآن الوصول إلى جميع الميزات.",
-  "verification_login_button": "سجّل الدخول الآن"
+  "verification_login_button": "سجّل الدخول الآن",
+  "sidebar_history": "سجل النشاطات",
+  "sidebar_doc_summary": "ملخص مستند .pdf",
+  "sidebar_audio_summary": "ملخص صوتي .m4a",
+  "sidebar_video_chat": "محادثة فيديو .mp4"
 }

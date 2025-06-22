@@ -47,5 +47,9 @@
   "verification_title": "Account Verified!",
   "verification_success1": "Your account has been successfully verified.",
   "verification_success2": "You can now access all features.",
-  "verification_login_button": "Log in now"
+  "verification_login_button": "Log in now",
+    "sidebar_history": "History",
+  "sidebar_doc_summary": "Document summary .pdf",
+  "sidebar_audio_summary": "Audio summary .m4a",
+  "sidebar_video_chat": "Video chat .mp4"
 }

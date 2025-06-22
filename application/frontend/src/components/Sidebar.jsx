@@ -2,8 +2,11 @@ import React from 'react';
 import { Box, Typography, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import { useTranslation } from 'react-i18next';
 
 const Sidebar = ({ open, onClose }) => {
+
+  const { t } = useTranslation();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -83,10 +86,10 @@ const Sidebar = ({ open, onClose }) => {
         {/* Historique */}
         <Box sx={{ flexGrow: 1, overflowY: 'auto', mt: 2 }}>
           <Typography variant="body1" sx={{ fontWeight: 600, color: theme.palette.text.primary, mb: 2 }}>
-            Historique
+             {t('sidebar_history')}
           </Typography>
 
-          {['Résumé du document X.pdf', 'Résumé audio réunion.m4a', 'Discussion vidéo.mp4'].map(
+          {[t('sidebar_doc_summary'), t('sidebar_audio_summary'), t('sidebar_video_chat')].map(
             (item, index) => (
               <Box
                 key={index}
