@@ -13,7 +13,7 @@ from outils import extract_text
 from qdrant_client.http.models import Filter, FilterSelector
 from langchain.memory import ConversationBufferMemory
 from langchain.agents import initialize_agent, Tool, AgentType
-from prompts_v0_3 import *
+from prompts_v0_4 import *
 from langchain.prompts import MessagesPlaceholder
 
 
@@ -47,7 +47,7 @@ vectorstore = Qdrant(client=client, collection_name=QDRANT_COLLECTION, embedding
 # 🔥 Chargement du modèle Groq avec mise en cache
 @st.cache_resource
 def get_llm(llm_name):
-    return ChatGroq(groq_api_key=GROQ_API_KEY_3, model_name=llm_name)
+    return ChatGroq(groq_api_key=GROQ_API_KEY, model_name=llm_name)
 
 llm = get_llm(LLM_NAME_1)
 llm2=get_llm(LLM_NAME_4)
@@ -197,6 +197,9 @@ agent = st.session_state.agent
 
 
 # 📌 Chaînes de traitement
+
+# 📌 Chaînes de traitement
+chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm | StrOutputParser())
 chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
 chain_traduction  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction | llm2| StrOutputParser())
 chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm | StrOutputParser())
@@ -231,6 +234,7 @@ if uploaded_files and st.session_state["submit_clicked"]:
             context = retrieve_context_with_metadata_file(query, file_name=uploaded_file.name)
 
             st.session_state["retrieved_contexts"].append(context)
+            
 
             # Générer le résumé
             resume = ""
@@ -252,6 +256,8 @@ if uploaded_files and st.session_state["submit_clicked"]:
             summary_fr_placeholder = st.empty()
 
             if not st.session_state["summary_text"]["fr"]:
+                print(st.session_state["retrieved_contexts"])
+                print(st.session_state["resumes_per_file"])
                 # Cas de plusieurs fichiers → faire appel à titre/résumé global
                 all_resumes = "\n\n".join(st.session_state["resumes_per_file"])
                 # Générer le titre en streaming
@@ -361,16 +367,28 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-if user_input:
-    # Afficher le message utilisateur
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
 
-    # Réponse de l'agent
+if user_input:
+    st.session_state["messages"].append({"role": "user", "content": user_input})
+
+     # Création du contexte enrichi avec l'historique
+    chat_history = "\n".join(
+        [f"{msg['role'].capitalize()}: {msg['content']}" for msg in st.session_state["messages"] if msg['role'] != "system"]
+    )
+
+    context = st.session_state["retrieved_context"]
+
+    with st.chat_message("user"):
+        st.markdown(user_input) 
+    
     with st.chat_message("assistant"):
-        with st.spinner("Analyse en cours..."):
-            response = agent.run(user_input)
-            st.markdown(response)
-            st.session_state.messages.append({"role": "assistant", "content": response})
-        
+        message_placeholder = st.empty()
+        response_stream = ""
+        for chunk in chain_chat.stream({
+                                "context": context,
+                                "question": f"{chat_history}\nUser: {user_input}\nAssistant:"}):
+            if chunk:
+                response_stream += chunk
+                message_placeholder.markdown(response_stream)
+
+        st.session_state["messages"].append({"role": "assistant", "content": response_stream})
