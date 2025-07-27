@@ -1,13 +1,12 @@
 import numpy as np
 import cv2
+import numpy as np
 from pdf2image import convert_from_path
 from groq import Groq
 from constants import *
 import pytesseract
 from langdetect import detect_langs  
 import re
-import platform
-import os
 
 
 pytesseract.pytesseract.tesseract_cmd = PATH_tesseract
@@ -25,7 +24,7 @@ def preprocess_image(image):
 
 def detect_language_from_pdf(pdf_path):
     """Extrait 25% du haut de la première page pour détecter la langue."""
-
+  
     images=convert_from_path(pdf_path, poppler_path=PATH_poppler, dpi=400)
 
 
@@ -66,7 +65,6 @@ def extract_text_from_pdf(pdf_path, lang):
     """Extrait le texte d'un PDF en effectuant une reconnaissance optique (OCR)."""
     extracted_text = []
 
-
     images=convert_from_path(pdf_path, poppler_path=PATH_poppler, dpi=400)
 
     for i, image in enumerate(images):
@@ -98,6 +96,36 @@ def extract_text_from_pdf(pdf_path, lang):
 
     return "\n\n".join(extracted_text).strip()
 
+
+def extract_text_from_image(file_path, lang):
+    """Extrait le texte d'une image en appliquant le même traitement que pour une page PDF."""
+    image = cv2.imread(file_path)
+    if image is None:
+        raise ValueError("Impossible de lire l'image.")
+
+    # ✅ Appliquer le prétraitement
+    processed_img = preprocess_image(image)
+
+    # Sauvegarder l'image temporairement
+    temp_path = "temp_image.jpg"
+    cv2.imwrite(temp_path, processed_img)
+
+    try:
+        if lang == "fr":
+            text_tesseract = pytesseract.image_to_string(temp_path, lang="fra+ara")
+        elif lang == "ar":
+            text_tesseract = pytesseract.image_to_string(temp_path, lang="ara+fra")
+        else:
+            raise ValueError("Langue non supportée. Utilisez 'fr' pour le français ou 'ar' pour l'arabe.")
+        
+        return text_tesseract.strip()
+
+    finally:
+        # Supprimer l'image temporaire après traitement
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
 def extract_text_from_audio_video(pdf_path):
   with open(pdf_path, "rb") as file:
       transcription = client_groq.audio.transcriptions.create(
@@ -107,9 +135,15 @@ def extract_text_from_audio_video(pdf_path):
       )
       return transcription.text
 
-def clean_text_extracted_from_pdf(file_path, lang):
+
+def clean_text_with_llm(file_path, lang):
     """Extrait et corrige le texte en fonction de la langue."""
-    text = extract_text_from_pdf(file_path, lang)
+      # Si c’est un chemin de fichier PDF, on extrait le texte
+    if str(file_path).lower().endswith(".pdf"):
+        text = extract_text_from_pdf(file_path, lang)
+    else:
+        text = extract_text_from_image(file_path,lang)  # C’est déjà du texte
+    
     if lang == "fr":
         completion = client_groq.chat.completions.create(
             model=LLM_correction,
@@ -216,10 +250,22 @@ def extract_text(file_path):
 
     if file_path_.endswith(".pdf"):
         detected_lang = detect_language_from_pdf(file_path)
-        return clean_text_extracted_from_pdf(file_path,detected_lang)
+        return clean_text_with_llm(file_path,detected_lang)
 
     elif file_path_.endswith((".mp3", ".wav", ".ogg", ".flac", ".m4a",".mp4", ".avi", ".mov", ".mkv")):
         return extract_text_from_audio_video(file_path)
+    
+    elif file_path_.endswith((".png", ".jpg", ".jpeg", ".bmp", ".tiff")):
+        # on détecte la langue comme pour le PDF
+        image = cv2.imread(file_path)
+        temp_text = pytesseract.image_to_string(image, lang="fra+ara")
+        langs = detect_langs(temp_text)
+        lang = "fr"
+        for l in langs:
+            if l.lang == "ar" and l.prob > 0.6:
+                lang = "ar"
+                break
+        return clean_text_with_llm(file_path, lang)
 
     else:
         raise ValueError("Format non supporté")

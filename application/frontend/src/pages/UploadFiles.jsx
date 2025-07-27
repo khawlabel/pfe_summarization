@@ -308,11 +308,24 @@ return (
                   <CircularProgress size={32} sx={{ color: '#0d5b53' }} />
                 </Box>
               ) : isSuccessuploadefiles ? (
-                <Alert severity="success" sx={{ mt: 3 }}>
+                <Alert dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} severity="success" 
+                    sx={{
+                      mt: 3,
+                      '& .MuiAlert-icon': {
+                        marginInlineEnd: '0.5em', // ajoute un espace entre l'icône et le texte
+                      },
+                    }}
+                  >
                   {t('uploadSuccess')}
                 </Alert>
               ) : isErroruploadefiles ? (
-                <Alert severity="error" sx={{ mt: 3 }}>
+                <Alert dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} severity="error"
+                sx={{
+                      mt: 3,
+                      '& .MuiAlert-icon': {
+                        marginInlineEnd: '0.5em', // ajoute un espace entre l'icône et le texte
+                      },
+                    }} >
                 {t('uploadError')} {messageuploadefiles}
                 </Alert>
               ) : (

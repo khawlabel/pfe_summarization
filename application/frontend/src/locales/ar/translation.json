@@ -5,7 +5,7 @@
   "dropzoneTitle": "انقر أو اسحب ملفاتك هنا",
   "dropzoneFormats": "الصيغ المدعومة : <strong>.pdf، .mp3، .wav، .ogg، .flac، .m4a، .mp4، .avi، .mov، .mkv، .png، .jpg، .jpeg، .bmp، .tiff</strong>",
   "selectedFiles": "الملفات المُختارة :",
-  "uploadSuccess": "تم تحميل الملفات بنجاح!",
+  "uploadSuccess": " تم تحميل الملفات بنجاح ! ",
   "uploadError": "حدث خطأ أثناء تحميل الملفات:",
   "submit": "إرسال",
   "rejectedFilesAlert": "الملفات التالية غير مدعومة:",

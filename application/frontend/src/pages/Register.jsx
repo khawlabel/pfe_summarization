@@ -174,32 +174,32 @@ const Register = () => {
   return (
     <Box
       sx={{
-        height: '100vh',
+        minHeight: '100vh',
         display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
+        flexDirection: 'column',
         backgroundColor: COLORS.background,
         padding: 5,
       }}
     >
-      <Paper
-        elevation={3}
-        sx={{
-          display: 'flex',
-          flexDirection: 'row',
-          borderRadius: 4,
-          backgroundColor: COLORS.paperBackground,
-          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)', // plus prononcé
-          overflow: 'hidden',
-          width: {
-            xs: '90%',
-            sm: '70%',
-            md: '50%',
-            lg: '40%',
-          },
-          maxWidth: '500px',
-        }}
-      >
+      <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+    <Paper
+      elevation={3}
+      sx={{
+        display: 'flex',
+        flexDirection: 'row',
+        borderRadius: 4,
+        backgroundColor: COLORS.paperBackground,
+        boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)',
+        overflow: 'hidden',
+        width: {
+          xs: '90%',
+          sm: '70%',
+          md: '50%',
+          lg: '40%',
+        },
+        maxWidth: '500px',
+      }}
+    >
         <Box sx={{ flex: 1, padding: 4 }}>
           <Box display="flex" flexDirection="column" alignItems="center">
             <Typography
@@ -212,13 +212,25 @@ const Register = () => {
             </Typography>
                                     {/* Affichage de l'alerte d'erreur */}
                         {showError && (
-                          <Alert severity="error" sx={{ mb: 2, width: '93%' }}>
+                          <Alert dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} severity="error" 
+                           sx={{
+                      mb: 2, width: '93%',
+                      '& .MuiAlert-icon': {
+                        marginInlineEnd: '0.5em', // ajoute un espace entre l'icône et le texte
+                      },
+                    }} >
                             {auth.messageregister }
                           </Alert>
                         )}
 
                         {showSuccess && (
-                          <Alert severity="success" sx={{ mb: 2, width: '93%' }}>
+                          <Alert dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} severity="success" 
+                           sx={{
+                      mb: 2, width: '93%',
+                      '& .MuiAlert-icon': {
+                        marginInlineEnd: '0.5em', // ajoute un espace entre l'icône et le texte
+                      },
+                    }} >
                             {typeof auth.messageregister  === 'string'
                               ? auth.messageregister 
                               : t("register_success")}
@@ -323,21 +335,19 @@ const Register = () => {
           </Typography>
         </Box>
       </Paper>
-              <Box
+      </Box>
+             <Box
+                component="footer"
                 sx={{
-                  position: 'fixed',
-                  bottom: 10,
-                  left: 0,
-                  right: 0,
-                  zIndex: 9999,
+                  textAlign: 'center',
+                  py: 2,
                 }}
               >
                 <Typography
-                  align="center"
                   sx={{
                     color: '#cccccc',
                     fontSize: '0.95rem',
-                    fontFamily: `'Cormorant Garamond', serif`, // écriture élégante
+                    fontFamily: `'Cormorant Garamond', serif`,
                     letterSpacing: '0.5px',
                     fontStyle: 'italic',
                     fontWeight: 500,

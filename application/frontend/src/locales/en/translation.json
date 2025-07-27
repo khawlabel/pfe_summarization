@@ -5,7 +5,7 @@
   "dropzoneTitle": "Click or drag your files here",
   "dropzoneFormats": "Supported formats: <strong>.pdf, .mp3, .wav, .ogg, .flac, .m4a, .mp4, .avi, .mov, .mkv, .png, .jpg, .jpeg, .bmp, .tiff</strong>",
   "selectedFiles": "Selected files:",
-  "uploadSuccess": "Files uploaded successfully!",
+  "uploadSuccess": "Files uploaded successfully !",
   "uploadError": "Upload failed:",
   "submit": "Submit",
   "rejectedFilesAlert": "The following files are not accepted:",
