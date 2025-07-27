@@ -199,11 +199,11 @@ agent = st.session_state.agent
 # 📌 Chaînes de traitement
 
 # 📌 Chaînes de traitement
-chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm | StrOutputParser())
-chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm | StrOutputParser())
+chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm2 | StrOutputParser())
+chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm2 | StrOutputParser())
 chain_traduction  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction | llm2| StrOutputParser())
-chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm | StrOutputParser())
-chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm | StrOutputParser())
+chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm2 | StrOutputParser())
+chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm2 | StrOutputParser())
 
 # 🛑 Suppression des données uniquement si tous les fichiers ont été supprimés manuellement
 if not uploaded_files and st.session_state["processed_files"]:
@@ -215,6 +215,7 @@ if not uploaded_files and st.session_state["processed_files"]:
     st.session_state.setdefault("retrieved_contexts", [])
     st.session_state["titles_per_file"] = None
     st.session_state["resumes_per_file"] = []
+    
 
 # 🛑 Suppression des données une seule fois
 if uploaded_files and not st.session_state["summary_generated"]:
@@ -376,7 +377,7 @@ if user_input:
         [f"{msg['role'].capitalize()}: {msg['content']}" for msg in st.session_state["messages"] if msg['role'] != "system"]
     )
 
-    context = st.session_state["retrieved_context"]
+    context = st.session_state["retrieved_contexts"]
 
     with st.chat_message("user"):
         st.markdown(user_input) 
