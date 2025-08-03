@@ -17,7 +17,7 @@ from prompts_v0_4 import *
 from langchain.prompts import MessagesPlaceholder
 
 
-## App-V0-2  ##
+## App-V0-4  ##
 
 # 📌 Interface Streamlit
 st.set_page_config(page_title="🧠 AI Assistant", layout="wide")
@@ -60,7 +60,7 @@ for idx, point in enumerate(scroll_result[0]):
 # 🔥 Chargement du modèle Groq avec mise en cache
 @st.cache_resource
 def get_llm(llm_name):
-    return ChatGroq(groq_api_key=GROQ_API_KEY_2, model_name=llm_name)
+    return ChatGroq(groq_api_key=GROQ_API_KEY, model_name=llm_name)
 
 llm = get_llm(LLM_NAME_1)
 llm2=get_llm(LLM_NAME_4)
@@ -139,9 +139,9 @@ def retrieve_context_with_metadata_file(query, file_name=None):
 
     formatted_context = "\n\n".join(
         [
-            f"📂 *Fichier*: {doc.metadata.get('file_name', 'Inconnu')}\n"
-            f"📄 *Type*: {doc.metadata.get('file_type', 'Inconnu')}\n"
-            f"🔹 *Contenu*:\n{doc.page_content}"
+            f"📂 Fichier: {doc.metadata.get('file_name', 'Inconnu')}\n"
+            f"📄 Type: {doc.metadata.get('file_type', 'Inconnu')}\n"
+            f"🔹 Contenu:\n{doc.page_content}"
             for doc in retrieved_docs
         ]
     )
@@ -218,14 +218,7 @@ chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("
 chain_resumer_support=({"summary": itemgetter("summary"),
         "support_summary_1":itemgetter("support_summary_1"),      
         "support_summary_2":itemgetter("support_summary_2"),   
-        "support_summary_3":itemgetter("support_summary_3"),   
-        "support_summary_4":itemgetter("support_summary_4"),   
-        "support_summary_5":itemgetter("support_summary_5"),   
-        "support_summary_6":itemgetter("support_summary_6"),   
-        "support_summary_7":itemgetter("support_summary_7"),   
-        "support_summary_8":itemgetter("support_summary_8"),   
-        "support_summary_9":itemgetter("support_summary_9"),   
-        "support_summary_10":itemgetter("support_summary_10")    } | prompt_support | llm | StrOutputParser())
+        "support_summary_3":itemgetter("support_summary_3"),    } | prompt_support | llm | StrOutputParser())
 
 # 🛑 Suppression des données uniquement si tous les fichiers ont été supprimés manuellement
 if not uploaded_files and st.session_state["processed_files"]:
@@ -273,8 +266,8 @@ if uploaded_files and st.session_state["submit_clicked"]:
         st.markdown('<h2 style="font-size: 22px;">📖 Résumé des documents</h2>', unsafe_allow_html=True)
         st.divider()  # Ligne de séparation visuelle
 
-        # 📌 *Résumé en Français*
-        with st.expander("📌 *Résumé en Français*", expanded=True):
+        # 📌 Résumé en Français
+        with st.expander("📌 Résumé en Français", expanded=True):
             summary_fr_placeholder = st.empty()
 
             if not st.session_state["summary_text"]["fr"]:
@@ -312,7 +305,7 @@ if uploaded_files and st.session_state["submit_clicked"]:
                                 unsafe_allow_html=True
                             )
 
-                    st.session_state["summary_text"]["fr"] = f"*Titre* : {titre}\n\n*Résumé* : {resume_support}"
+                    st.session_state["summary_text"]["fr"] = f"Titre : {titre}\n\n*Résumé* : {resume_support}"
                 else:
                     all_resumes = "\n\n".join(st.session_state["resumes_per_file"])
                     titre = st.session_state["titles_per_file"]
@@ -335,10 +328,10 @@ if uploaded_files and st.session_state["submit_clicked"]:
                                 unsafe_allow_html=True
                             )
 
-                    st.session_state["summary_text"]["fr"] = f"*Titre* : {titre}\n\n*Résumé* : {resume}"
+                    st.session_state["summary_text"]["fr"] = f"Titre : {titre}\n\n*Résumé* : {resume}"
 
-                # 📌 *Résumé en Arabe*
-        with st.expander("📌 *ملخص باللغة العربية*", expanded=True):
+                # 📌 Résumé en Arabe
+        with st.expander("📌 ملخص باللغة العربية", expanded=True):
             summary_ar_placeholder = st.empty()
 
             if not st.session_state["summary_text"]["ar"]:
@@ -359,13 +352,13 @@ if uploaded_files and st.session_state["submit_clicked"]:
         st.session_state["summary_ready"] = True  # Indiquer que le résumé est prêt
 
 
-    # 💬 *Message après le résumé*
+    # 💬 Message après le résumé
     st.markdown('<h3 style="font-size: 20px;">💬 <b>Vous pouvez maintenant poser vos questions dans le chat ci-dessous</b></h3>', unsafe_allow_html=True)
 elif "summary_text" in st.session_state :  # S'affiche uniquement si un résumé existe et qu'aucun fichier n'est uploadé
     st.markdown('<h2 style="font-size: 22px;">📖 Résumé des documents</h2>', unsafe_allow_html=True)
     st.divider()  # Ligne de séparation visuelle
 
-    with st.expander("📌 *Résumé en Français*", expanded=True):
+    with st.expander("📌 Résumé en Français", expanded=True):
         st.markdown(  f'''
                     <div style="text-align: justify;">
                         {st.session_state["summary_text"]["fr"]}
@@ -374,7 +367,7 @@ elif "summary_text" in st.session_state :  # S'affiche uniquement si un résumé
                     unsafe_allow_html=True
                 )
 
-    with st.expander("📌 *ملخص باللغة العربية*", expanded=True):
+    with st.expander("📌 ملخص باللغة العربية", expanded=True):
         st.markdown(f'<div style="font-size: 21px; text-align: justify; direction: rtl; line-height: 1.5; font-family: \'Traditional Arabic\', sans-serif;">{st.session_state["summary_text"]["ar"]}</div>', unsafe_allow_html=True)
 
     st.markdown('<h3 style="font-size: 20px;">💬 <b>Vous pouvez maintenant poser vos questions dans le chat ci-dessous</b></h3>', unsafe_allow_html=True)
@@ -385,7 +378,7 @@ for message in st.session_state["messages"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ✅ *Activation du chat après le résumé*
+# ✅ Activation du chat après le résumé
 
 user_input = st.chat_input(
     "Ask your questions here..." if st.session_state["summary_ready"] else "❌ Please upload and submit a file first.", 
@@ -414,4 +407,3 @@ if user_input:
             response = agent.run(user_input)
             st.markdown(response)
             st.session_state.messages.append({"role": "assistant", "content": response})
-        
