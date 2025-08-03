@@ -18,15 +18,20 @@ import asyncio
 from outils import *
 from fastapi.responses import StreamingResponse
 from langchain.memory import ConversationBufferMemory
-from prompts_v0_4 import *
 from qdrant_client.http.models import Filter, FilterSelector
 from fastapi.middleware.cors import CORSMiddleware
 from numpy import dot
 import numpy as np
 from fastapi import Header
 from translation import translations
-
-
+from langchain.retrievers import BM25Retriever
+from langchain.schema import Document
+from numpy import dot
+from langchain.text_splitter import CharacterTextSplitter
+from langdetect import detect, DetectorFactory
+import json
+from prompts_v0_4 import *
+DetectorFactory.seed = 0  # Pour cohérence de détection de langue
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -43,6 +48,7 @@ app = FastAPI()
 origins = [
     "http://172.25.224.1:3000",
     "http://localhost:3000",
+    "http://localhost:3000/",
     "http://frontend:3000",  # <- à ajouter pour que Docker accepte les requêtes du frontend
 ]
 
@@ -56,6 +62,7 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 serializer = URLSafeTimedSerializer(SECRET_KEY)
+
 
 # =================== Modèles =====================
 class RegisterRequest(BaseModel):
@@ -175,26 +182,6 @@ L'équipe Support
         print(f"Erreur lors de l'envoi de l'email: {e}")
         raise HTTPException(status_code=500, detail="Échec de l'envoi de l'email.")
 
-def retrieve_context_with_metadata_file(query, file_name=None,length=1):
-    """Récupère le contexte pertinent pour la requête, éventuellement filtré par fichier"""
-    retriever = app.state.vectorstore.as_retriever(search_kwargs={"k": length})
-    retrieved_docs = retriever.invoke(query)
-
-    if file_name:
-        # Ne garder que les documents liés à ce fichier
-        retrieved_docs = [doc for doc in retrieved_docs if doc.metadata.get("file_name") == file_name]
-
-    formatted_context = "\n\n".join(
-        [
-            f"📂 Fichier: {doc.metadata.get('file_name', 'Inconnu')}\n"
-            f"📄 Type: {doc.metadata.get('file_type', 'Inconnu')}\n"
-            f"🔹 Contenu:\n{doc.page_content}"
-            for doc in retrieved_docs
-        ]
-    )
-
-    return formatted_context    
-
 def stream_responses(chain,queries):
     for query in queries:
         for chunk in chain.stream(query):
@@ -231,7 +218,7 @@ async def start():
     
             # Récupérer tous les points (résumés) de la collection
     points, _ = client.scroll(
-        collection_name=QDRANT_COLLECTION_SUPPORT_2,
+        collection_name=QDRANT_COLLECTION_SUPPORT_4,
         limit=20,
         with_vectors=True,
         with_payload=True
@@ -239,33 +226,212 @@ async def start():
 
 
     llm1 = load_llm1()
-    llm2=load_llm2()
-    llm3 = load_llm3()
-    llm4=load_llm4()
-    llm5 = load_llm5()
-    llm6=load_llm6()
-    llm7=load_llm7()
-   
+    llm2 = load_llm2()
+
+    template = """
+    Tu es un assistant intelligent multilingue (français et arabe), spécialisé dans la *génération de questions uniquement* (pas de réponses) de type 5W1H à partir d’un texte.
+
+    🎯 *Objectif :*
+    Analyser attentivement le texte fourni (le "contexte") et générer des *questions 5W1H* pertinentes, sans jamais proposer de réponses. La sortie doit être *strictement* un objet JSON, *sans aucun ajout ou explication*.
+
+    📘 *Définition des questions 5W1H* :
+    - *Qui (Who)* : Générer une question visant à identifier la personne ou l’entité principale ayant annoncé, initié ou soutenu  le fait principal.
+    - *Quoi (What)* :  Générer une question visant à identifier l'evénement ou action principale décrite dans le texte.
+    - *Quand (When)* :  Générer une question visant à identifier le moment ou date de l’événement.
+    - *Où (Where)* :  Générer une question visant à identifier le lieu où s’est déroulé l’événement.
+    - *Pourquoi (Why)* :  Générer une question visant à identifier la raison ou cause derrière l’événement.
+    - *Comment (How)* :  Générer une question visant à identifier la façon ou méthode par laquelle l’événement s’est produit.
+
+    🌍 *Instructions multilingues :*
+    - Si le contexte est *uniquement en français, génère **une seule version en français* pour chaque question.
+    - Si le contexte est *uniquement en arabe, génère **une seule version en arabe* pour chaque question.
+    - Si le contexte est *mixte (français + arabe)* :
+    - Génère *deux versions* de chaque question :
+        - La version *en français* ne doit utiliser que le contenu *en français*.
+        - La version *en arabe* ne doit utiliser que le contenu *en arabe*.
+    - *Ne traduis jamais* entre les langues et *ne fusionne pas* d'informations entre textes arabes et français.
+
+    🚫 *Contraintes supplémentaires :*
+    - *Ne réponds jamais aux questions*, seulement les poser.
+    - *Ne produis que du JSON*, sans aucune conclusion, explication ou message supplémentaire.
+
+    📝 *Contexte* :
+    --------------------
+    {context}
+    --------------------
+
+    ✅ *Format de sortie (JSON uniquement) :*
+    ```json
+    {{
+    "questions": {{
+        "who": {{
+        "fr": "Ta question en français ici (si applicable)",
+        "ar": "سؤالك بالعربية هنا (إن وجد)"
+        }},
+        "what": {{
+        "fr": "...",
+        "ar": "..."
+        }},
+        "when": {{
+        "fr": "...",
+        "ar": "..."
+        }},
+        "where": {{
+        "fr": "...",
+        "ar": "..."
+        }},
+        "why": {{
+        "fr": "...",
+        "ar": "..."
+        }},
+        "how": {{
+        "fr": "...",
+        "ar": "..."
+        }}
+    }}
+    }}
+    """
+    prompt_5w1h = ChatPromptTemplate.from_template(template)
+
+
+    prompt_answer = ChatPromptTemplate.from_template("""
+    Tu es un expert en compréhension multilingue. En t’appuyant uniquement sur les éléments suivants, rédige une réponse précise, adaptée à la nature de la question, et entièrement en français :
+
+    Question (en français) :
+    {question_fr}
+
+    Contexte (en français) :
+    {fr_chunks}
+
+    Question (en arabe) :
+    {question_ar}
+
+    Contexte (en arabe) :
+    {ar_chunks}
+
+    Ta réponse doit :
+    - Être concise si la question appelle une réponse directe ou factuelle (par exemple : une date, un nom, un lieu).
+    - Être détaillée si plusieurs informations ou éléments de contexte sont nécessaires pour répondre correctement.
+    - S’appuyer sur toutes les informations pertinentes fournies, qu’elles soient en français ou en arabe.
+    - Reprendre **autant que possible les formulations originales des extraits en français**, sans les reformuler inutilement.
+    - Ne surtout pas réutiliser ou traduire des formulations en arabe.
+    - Être rédigée uniquement en français, sans aucun mot ou élément en arabe.
+    - Ne pas reformuler les questions ni rappeler les extraits ou les résumer.
+    - Ne pas inclure de traductions, de précisions inutiles ni d’introduction.
+
+    Commence directement par la réponse, claire et structurée, en t’appuyant prioritairement sur les formulations des extraits fournis en français.
+    """)
+
+
+    template_traduction_titre =  """
+        Vous êtes un traducteur professionnel. Votre tâche est de traduire le texte ci-dessous du français vers l'arabe. Voici les règles que vous devez suivre pour cette traduction :
+        
+    
+        1. *Ne modifiez pas l'ordre du texte* : Assurez-vous que l'ordre des phrases et des idées reste fidèle à l'original.
+        2. *Effectuez uniquement la traduction linguistique* : Votre seul travail est de traduire le texte du français vers l'arabe, sans changer aucun autre aspect du contenu.
+        3. *Veillez à la fluidité et la précision* de la traduction en arabe, en respectant les règles grammaticales et stylistiques de la langue cible.
+
+        Voici le texte à traduire : 
+        {titre_francais}
+        """
+
+    template_traduction_resume =  """
+        Vous êtes un traducteur professionnel. Votre tâche est de traduire le texte ci-dessous du français vers l'arabe. Voici les règles que vous devez suivre pour cette traduction :
+        
+        1. *Ne modifiez pas l'ordre du texte* : Assurez-vous que l'ordre des phrases et des idées reste fidèle à l'original.
+        2. *Effectuez uniquement la traduction linguistique* : Votre seul travail est de traduire le texte du français vers l'arabe, sans changer aucun autre aspect du contenu.
+        3. *Veillez à la fluidité et la précision* de la traduction en arabe, en respectant les règles grammaticales et stylistiques de la langue cible.
+
+        Voici le texte à traduire : 
+        {resume_francais}
+        """
+        
+    template_titre = """  
+                        Ta tâche est de générer un titre en respectant strictement les règles suivantes :  
+
+                        ### Contraintes sur le titre :
+
+                        Le titre doit obligatoirement être reformulé selon un des trois modèles suivants, choisis selon l’élément le plus mis en valeur dans le contexte :
+
+                        1. Qui puis Quoi  
+                        - À utiliser si le sujet principal est une personne, institution ou groupe.  
+                        - Le titre commence par le nom exact suivi de l’action ou l’événement.  
+                        - Exemple : Tebboune : "L'Algérie est autosuffisante en électricité et dispose d'un excédent de 12 000 mégawatts".
+
+                        2. Où puis Quoi  
+                        - À utiliser si le lieu est central dans le contexte.  
+                        - Le titre commence par le lieu (ex. nom de ville, région), suivi de l’événement.  
+                        - Exemple : Oran : Mobilis ouvre un centre de services.
+
+                        3. Quand puis Quoi ⚠ (Rare, à utiliser uniquement si le temps est l’élément principal)  
+                        - À utiliser si la date ou la période est fortement mise en avant, plus que les personnes ou lieux.  
+                        - Le titre commence par cette date/période suivie de l’événement.  
+                        - Exemple : En janvier 2025 : Belgacem khawla a publier un article scientifique sur AI  
+                        - ❗Attention : Ce modèle est rarement utilisé. Ne le choisir **que si la date est manifestement l’information la plus importante.
+
+                        ⚠ Ne jamais mentionner un nom, une personne ou une institution qui n’est pas explicitement mentionnée dans le contexte.  
+                        ⚠ Le nom cité dans le titre doit non seulement apparaître dans le texte, mais il doit aussi être **clairement l'auteur ou responsable de l'action.  
+                        ❌ Interdiction stricte de commencer un titre par "Tebboune :", sauf si le texte dit explicitement que Tebboune lui-même a fait cette déclaration ou pris cette action.  
+                        ✅ Si c'est un ministère ou une institution qui agit ou parle, le titre doit commencer par ce ministère, cette institution ou ce lieu.
+                        ⚠ Si le titre généré ne commence PAS par un nom propre, un lieu ou une date, alors il est invalide. Recommence avec l’un des trois modèles : Qui puis Quoi, Où puis Quoi, Quand puis Quoi. 
+                        ⚠ Ne pas copier ni reformuler partiellement le titre d’origine.   
+                        ⚠ Il est interdit de simplement insérer un nom ou un lieu devant le titre d’origine.  
+                        ✅ Le contenu du titre doit être reconstruit à partir des faits essentiels du texte.
+                        ⚠ Ne jamais formuler un titre de cette manière : "Akhbar El Youm : [événement]". Le titre doit débuter par un nom propre, un **lieu, ou une **date/période.  
+                        ❌ Ne jamais utiliser un mot vague ou générique comme "Hydrocarbures" ou "Énergie" comme nom propre.  
+                        ✅ Utiliser le nom exact de l’institution mentionnée dans le texte (ex. "Ministère de l’Énergie et des Mines", "SONATRACH", etc.)
+                        ❌ Interdiction d’utiliser des formulations floues comme “en mai prochain”, “dans les jours à venir”, “bientôt”, etc.  
+                        ✅ Utiliser une date précise, ou bien une **formulation neutre comme : “en mai 2025” si la date est connue, sinon reformuler sans la mention temporelle.
+
+                        ### ✅ Étape de validation obligatoire du TITRE :
+
+                        1. Le titre doit impérativement commencer par :
+                        - soit un nom propre (personne ou institution),
+                        - soit un lieu,
+                        - soit une date ou période.
+                        2. Si aucun des trois n’est en première position, le titre est invalide : recommencer la génération.
+                        3. Identifier d'abord dans le contexte :
+                        - Si une personne ou institution est responsable de l’action → utiliser Qui puis Quoi.
+                        - Sinon, si un lieu est central → utiliser Où puis Quoi.
+                        - Sinon, si une date domine → utiliser Quand puis Quoi.
+                        4. ⚠ Si "Nadia mohammadi" est cité comme responsable de l’annonce, le titre doit commencer par son nom : "Nadia mohammadi : ..."
+                        5. ⚠ Tu dois uniquement répondre par le titre final, sans explication, sans justification. Pas d'introduction du type "Voici le titre :". Seulement la phrase du titre. Pas plus.
+
+                        Maintenant, applique ces règles au contexte suivant :  
+
+                        Contexte :  
+                        {context}  
+
+                        Titre (strictement en {language}) :  
+                """
+    prompt_titre = ChatPromptTemplate.from_template(template_titre)
+
+    prompt_traduction_titre = ChatPromptTemplate.from_template(template_traduction_titre)
+    prompt_traduction_resume = ChatPromptTemplate.from_template(template_traduction_resume)
 
     # 📌 Chaînes de traitement
 
-    chain_chat = ({"context": itemgetter("context"), "question": itemgetter("question")} | prompt_chat | llm1 | StrOutputParser())
-    chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm2 | StrOutputParser())
-    chain_traduction_titre  = ({"titre_francais": itemgetter("titre_francais")} | prompt_traduction_titre | llm3 | StrOutputParser())
-    chain_traduction_resume  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction_resume | llm3 | StrOutputParser())
-    chain_resumer_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer_general | llm5 | StrOutputParser())
-    chain_titre_general=({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre_general | llm6 | StrOutputParser())
+    chain = prompt_5w1h | llm1 | StrOutputParser()
+    contxtualisation_chain = prompt_contxtualisation | llm1 | StrOutputParser()
+    answer_chain = prompt_answer | llm1 | StrOutputParser()
+    chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm1 | StrOutputParser())
+    chain_traduction_titre  = ({"titre_francais": itemgetter("titre_francais")} | prompt_traduction_titre | llm2 | StrOutputParser())
+    chain_traduction_resume  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction_resume | llm2 | StrOutputParser())
+    chain_chat = ({"context": itemgetter("context"),"chat_history": itemgetter("chat_history"), "question": itemgetter("question")} | prompt_chat | llm2 | StrOutputParser())
+    chain_titre = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre | llm2 | StrOutputParser())
     chain_resumer_support = (
             {
                 "summary": itemgetter("summary"),
                 "support_summary_1": itemgetter("support_summary_1"),
                 "support_summary_2": itemgetter("support_summary_2")
-            } | prompt_support | llm7 | StrOutputParser()
+            } | prompt_support | llm1 | StrOutputParser()
         )
             
+    splitter = CharacterTextSplitter(chunk_size=750, chunk_overlap=100)
 
     app.state.support_summaries=points
     app.state.vectorstore = vectorstore
+    app.state.vectorstore_qst = vectorstore
     app.state.embedding_model = embedding_model 
     app.state.client = client 
     app.state.extract_text_func = extract_text 
@@ -273,19 +439,23 @@ async def start():
     app.state.chain_resumer = chain_resumer 
     app.state.chain_traduction_titre = chain_traduction_titre
     app.state.chain_traduction_resume = chain_traduction_resume
-    app.state.chain_resumer_general = chain_resumer_general 
-    app.state.chain_titre_general = chain_titre_general 
+    app.state.chain = chain 
+    app.state.contxtualisation_chain = contxtualisation_chain 
+    app.state.answer_chain = answer_chain 
+    app.state.chain_titre = chain_titre 
+    app.state.splitter = splitter 
     app.state.chain_resumer_support = chain_resumer_support 
-    app.state.retrieved_contexts = []
-    app.state.resumes_per_file = []
     app.state.summary_text = {"fr": "", "ar": ""}
-    app.state.titles_per_file = ""
     app.state.chain_chat=chain_chat
     app.state.user_histories = {}  # <- Ajout ici
     app.state.upload_files={}
     app.state.resume_fr=""
     app.state.titre_fr=""
-
+    app.state.bm25_docs=[]
+    app.state.questions_json={}
+    app.state.context={}
+    app.state.bm25_retriever={}
+    app.state.retriever_bm25_qst={}
 @app.get("/")
 def read_root():
     return {"message": "Hello World"}
@@ -311,6 +481,7 @@ async def upload_and_store_file(
             file_name = f.filename
 
             file_bytes = await f.read()
+            all_contexts = []
 
             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
                 temp_file.write(file_bytes)
@@ -318,27 +489,39 @@ async def upload_and_store_file(
 
             text = app.state.extract_text_func(temp_file_path)
             app.state.extract_text=text
+            lang = detect(text)
+            lang_label = "français" if lang == "fr" else "arabe" if lang == "ar" else "inconnue"
+
+            all_contexts.append(f"[Nom du fichier : {file_name} | Langue du fichier : {lang_label}]\n{text}")
+
+            chunks = app.state.splitter.split_text(text)
+            contextualized_versions = []
+            metadatas = []
+            for idx, chunk in enumerate(chunks):
+                contextualized_chunk =  app.state.contxtualisation_chain.invoke({
+                    "context": text,
+                    "chunk": chunk
+                })
+                fusion_text = contextualized_chunk + ": " + chunk
+
+                metadata = {
+                    "lang": lang_label,
+                    "chunk_id": idx,
+                    "raw_chunk": chunk,
+                    "contextualized_chunk": contextualized_chunk,
+                    "file_name": file_name,
+                    "file_type": file_type
+                }
+
+                contextualized_versions.append(fusion_text)
+                metadatas.append(metadata)
+                app.state.bm25_docs.append(Document(page_content=fusion_text, metadata=metadata))
+
+            app.state.vectorstore.add_texts(contextualized_versions, metadatas=metadatas)
 
             if not text:
                 results.append({"file_name": file_name, "error": "❌ Aucun texte extrait."})
                 continue
-
-            app.state.vectorstore.add_texts(
-                [text],
-                metadatas=[{"file_name": file_name, "file_type": file_type}]
-            )
-
-            app.state.uploaded_files_metadata.append({
-                "file_name": file_name,
-                "file_type": file_type
-            })
-
-            app.state.retrieved_contexts.append({
-             "contenu":text,
-             "file_name":file_name,
-             "file_type":file_type
-
-            })
 
             results.append({"file_name": file_name, "message": "✅ Fichier traité avec succès."})
 
@@ -358,14 +541,78 @@ async def upload_and_store_file(
         finally:
             if os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
+    # Index BM25
+    if app.state.bm25_docs:
+        app.state.bm25_retriever = BM25Retriever.from_documents(app.state.bm25_docs)
+        app.state.bm25_retriever.k = 2
+    full_context = "\n\n".join(all_contexts)
+    try:
+        result = app.state.chain.invoke({"context": full_context})
+        match = re.search(r"\{.*\}", result, re.DOTALL)
 
+        if not match:
+            raise ValueError("❌ Impossible d’extraire un bloc JSON valide.")
+        
+        json_str = match.group(0)
+        parsed = json.loads(json_str)
+
+        if "questions" not in parsed:
+            raise ValueError("❌ Clé 'questions' absente dans le JSON.")
+
+
+        app.state.questions_json = parsed
+
+    except Exception as e:
+        raise ValueError(f"❌ Erreur pendant la génération des questions : {e}")
+
+
+    parsed = app.state.questions_json
+    retriever_bm25 = app.state.bm25_retriever
+    context=[]
+    for w in ["who", "what", "when", "where", "why", "how"]:
+        pair = parsed["questions"].get(w, {})
+        question_fr = pair.get("fr", "").strip()
+        question_ar = pair.get("ar", "").strip()
+
+        fr_chunks, ar_chunks = [], []
+        
+        for lang_key, question in pair.items():
+            if question.strip():
+                vectordocs = app.state.vectorstore.similarity_search(question, k=2)
+                bm25docs = retriever_bm25.get_relevant_documents(question) if retriever_bm25 else []
+
+                seen = set()
+                for doc in vectordocs + bm25docs :
+                    key = (doc.metadata.get("source"), doc.metadata.get("chunk_id"))
+                    if key not in seen:
+                        seen.add(key)
+                        raw_chunk = doc.metadata.get("raw_chunk", doc.page_content)
+
+                        if lang_key == "fr":
+                            fr_chunks.append(raw_chunk)
+                        elif lang_key == "ar":
+                            ar_chunks.append(raw_chunk)
+
+         # Appel au LLM pour générer la réponse fusionnée
+        if question_fr or question_ar:
+            try:
+                response = app.state.answer_chain.invoke({
+                    "question_fr": question_fr,
+                    "fr_chunks": "\n".join(fr_chunks),
+                    "question_ar": question_ar,
+                    "ar_chunks": "\n".join(ar_chunks),
+                })
+                context.append(f"{w}: {response}")
+            except Exception as e:
+                raise ValueError(f"❌ Erreur lors de l'appel LLM pour {w}: {e}")
+            
+    app.state.context=context   
+                    
     # ✅ Un seul return ici, après traitement de tous les fichiers
     return JSONResponse(content={
         "user_id": user_id,
-        "results": results
+        "results": app.state.context
     })
-
-
 
 @app.post("/chat")
 async def chat_stream(data: ChatRequest):
@@ -384,16 +631,32 @@ async def chat_stream(data: ChatRequest):
         f"{msg['role'].capitalize()}: {msg['content']}"
         for msg in app.state.user_histories[user_id]
         if msg["role"] != "system"
-    ])
+    ])    # Vérification sécurisée de l'existence du BM25 retriever
 
-    context = app.state.retrieved_contexts
+    retriever_bm25_qst = app.state.retriever_bm25_qst
+
+    vectordocs = app.state.vectorstore.similarity_search(user_input, k=2)
+    bm25docs = retriever_bm25_qst.get_relevant_documents(user_input) if retriever_bm25_qst else []
+
+    seen = set()
+    context_chunks = []
+
+    for doc in vectordocs + bm25docs:
+        key = (doc.metadata.get("source"), doc.metadata.get("chunk_id"))
+        if key not in seen:
+            seen.add(key)
+            context_chunks.append(doc.metadata.get("raw_chunk", doc.page_content))
+
+    raw_chunk = "\n\n".join(context_chunks)
+
 
     # Fonction de génération en streaming
     def generate_stream():
         full_response = ""
         for chunk in app.state.chain_chat.stream({
-            "context": context,
-            "question": f"{chat_history_text}\nUser: {user_input}\nAssistant:"
+            "context": raw_chunk,
+            "chat_history": chat_history_text,
+            "question": f"User: {user_input}\nAssistant:"
         }):
             if chunk:
                 full_response += chunk
@@ -414,33 +677,26 @@ async def reset_app_state():
 
     # Réinitialisation des états internes
     app.state.user_histories = {}
-    app.state.retrieved_contexts = []
-    app.state.resumes_per_file = []
-    app.state.titles_per_file = ""
     app.state.summary_text = {"fr": "", "ar": ""}
     app.state.upload_files={}
     app.state.resume_fr=""
     app.state.titre_fr=""
+    app.state.context={}
+    app.state.bm25_docs=[]
+    app.state.questions_json={}
+    app.state.bm25_retriever={}
+    app.state.bm25_retriever_qst={}
     
     return {"status": "reset complete"}
 
 
 @app.get("/generate_summary_fr")
 async def generate_summary_stream():
-        
-    uploaded_files=app.state.upload_files
 
-    all_resumes = "\n\n".join(app.state.resumes_per_file)
+    resume = app.state.chain_resumer.invoke({"context": app.state.context, "language": "francais"})
 
-    # Résumé (fusion ou direct)
-    if len(uploaded_files) == 1:
-        resume = app.state.resumes_per_file[0]
-    else:
-        resume = app.state.chain_resumer_general.invoke({
-            "context": all_resumes,
-            "language": "francais"
-        })
     resultats = search_support(app.state.extract_text, resume)
+
     if resultats:
         support1 = resultats[0][0]
         support2 = resultats[1][0] if len(resultats) > 1 else ""
@@ -460,36 +716,12 @@ async def generate_summary_stream():
 @app.get("/generate_titre_fr")
 async def generate_titre_stream():
 
-    uploaded_files=app.state.upload_files
-    if not uploaded_files:
-        return JSONResponse(status_code=400, content={"error": "Aucun fichier reçu."})
-
-    query = "Fais un résumé clair et structuré des informations disponibles."
-    app.state.retrieved_contexts.clear()
-    app.state.resumes_per_file.clear()
-
-
-    resumes_temp = []
-    # Extraction et résumé fichier par fichier
-    for file in uploaded_files:
-        context = retrieve_context_with_metadata_file(query, file_name=file.filename, length=len(uploaded_files))
-        app.state.retrieved_contexts.append(context)
-
-        resume_piece = ""
-        resume_piece=app.state.chain_resumer.invoke({"context": context, "language": "francais"})
-            
-        resumes_temp.append(resume_piece)
-
-    app.state.resumes_per_file = resumes_temp
-
-    all_resumes = "\n\n".join(resumes_temp)
-
     def full_stream():
-        complete_titre = ""
-        for chunk in app.state.chain_titre_general.stream({"context": all_resumes, "language": "francais"}):
-            complete_titre += chunk
+        titre = ""
+        for chunk in app.state.chain_titre.stream({"context": app.state.context, "language": "francais"}):
+            titre += chunk
             yield chunk
-        app.state.titre_fr = complete_titre
+        app.state.titre_fr = titre
 
     return StreamingResponse(full_stream(), media_type="text/event-stream")
 

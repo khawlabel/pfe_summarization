@@ -15,16 +15,13 @@ QDRANT_URL = os.getenv('QDRANT_URL')
 
 GROQ_API_KEY_1 = os.getenv('GROQ_API_KEY_1')
 GROQ_API_KEY_2 = os.getenv('GROQ_API_KEY_2')
-GROQ_API_KEY_3 = os.getenv('GROQ_API_KEY_3')
-GROQ_API_KEY_4 = os.getenv('GROQ_API_KEY_4')
-GROQ_API_KEY_5 = os.getenv('GROQ_API_KEY_5')
-GROQ_API_KEY_6 = os.getenv('GROQ_API_KEY_6')
-GROQ_API_KEY_7 = os.getenv('GROQ_API_KEY_7')
+
 
 QDRANT_COLLECTION = os.getenv('QDRANT_COLLECTION')
 QDRANT_COLLECTION_v1 = os.getenv('QDRANT_COLLECTION_v1')
 QDRANT_COLLECTION_SUPPORT= os.getenv('QDRANT_COLLECTION_SUPPORT')
 QDRANT_COLLECTION_SUPPORT_2 = os.getenv('QDRANT_COLLECTION_SUPPORT_2')
+QDRANT_COLLECTION_SUPPORT_4= os.getenv('QDRANT_COLLECTION_SUPPORT_4')
 
 # Modèles utilisés
 LLM_NAME_1="llama3-8b-8192"
@@ -32,7 +29,6 @@ LLM_NAME_2="deepseek-r1-distill-qwen-32b"
 LLM_correction="deepseek-r1-distill-llama-70b"
 LLM_NAME_3="deepseek-ai/deepseek-llm-7b-cha"
 LLM_NAME_4="llama-3.3-70b-versatile"
-
 WHISPER="whisper-large-v3"
 MODEL_EMBEDDING="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
