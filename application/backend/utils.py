@@ -17,7 +17,9 @@ from typing import Optional
 import tempfile
 from prompts_v0_4 import *
 from constants import *
-from outils import extract_text  # (ou ailleurs si tu l’as)
+
+
+MODEL_EMBEDDING = os.path.join(os.path.dirname(__file__), "./multilingual-e5-small")
 
 # Initialisation Qdrant
 def init_qdrant():
@@ -37,17 +39,9 @@ def init_qdrant():
 # Chargement LLM
 def load_llm1():
     return ChatGroq(groq_api_key=GROQ_API_KEY_1, model_name=LLM_NAME_4)
+
 def load_llm2():
     return ChatGroq(groq_api_key=GROQ_API_KEY_2, model_name=LLM_NAME_4)
-def load_llm3():
-    return ChatGroq(groq_api_key=GROQ_API_KEY_3, model_name=LLM_NAME_4)
-def load_llm4():
-    return ChatGroq(groq_api_key=GROQ_API_KEY_4, model_name=LLM_NAME_4)
-def load_llm5():
-    return ChatGroq(groq_api_key=GROQ_API_KEY_5, model_name=LLM_NAME_4)
-def load_llm6():
-    return ChatGroq(groq_api_key=GROQ_API_KEY_6, model_name=LLM_NAME_4)
-def load_llm7():
-    return ChatGroq(groq_api_key=GROQ_API_KEY_7, model_name=LLM_NAME_4)
+
 
 
