@@ -455,7 +455,7 @@ async def start():
     app.state.questions_json={}
     app.state.context={}
     app.state.bm25_retriever={}
-    app.state.retriever_bm25_qst={}
+    app.state.nbr_fichiers=""
 @app.get("/")
 def read_root():
     return {"message": "Hello World"}
@@ -473,8 +473,9 @@ async def upload_and_store_file(
         app.state.uploaded_files_metadata = []
 
     results = []
-
+    nbr=0
     for f in file:
+        nbr=nbr+1
         try:
             suffix = os.path.splitext(f.filename)[1]
             file_type = suffix.lstrip(".")
@@ -541,10 +542,11 @@ async def upload_and_store_file(
         finally:
             if os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
+    app.state.nbr_fichiers=nbr            
     # Index BM25
     if app.state.bm25_docs:
         app.state.bm25_retriever = BM25Retriever.from_documents(app.state.bm25_docs)
-        app.state.bm25_retriever.k = 2
+        app.state.bm25_retriever.k = nbr*2
     full_context = "\n\n".join(all_contexts)
     try:
         result = app.state.chain.invoke({"context": full_context})
@@ -578,7 +580,7 @@ async def upload_and_store_file(
         
         for lang_key, question in pair.items():
             if question.strip():
-                vectordocs = app.state.vectorstore.similarity_search(question, k=2)
+                vectordocs = app.state.vectorstore.similarity_search(question, k=nbr*2)
                 bm25docs = retriever_bm25.get_relevant_documents(question) if retriever_bm25 else []
 
                 seen = set()
@@ -633,10 +635,10 @@ async def chat_stream(data: ChatRequest):
         if msg["role"] != "system"
     ])    # Vérification sécurisée de l'existence du BM25 retriever
 
-    retriever_bm25_qst = app.state.retriever_bm25_qst
+    bm25_retriever = app.state.bm25_retriever
 
-    vectordocs = app.state.vectorstore.similarity_search(user_input, k=2)
-    bm25docs = retriever_bm25_qst.get_relevant_documents(user_input) if retriever_bm25_qst else []
+    vectordocs = app.state.vectorstore.similarity_search(user_input, k=app.state.nbr_fichiers*2)
+    bm25docs = bm25_retriever.get_relevant_documents(user_input) if bm25_retriever else []
 
     seen = set()
     context_chunks = []
@@ -685,7 +687,7 @@ async def reset_app_state():
     app.state.bm25_docs=[]
     app.state.questions_json={}
     app.state.bm25_retriever={}
-    app.state.bm25_retriever_qst={}
+    app.state.nbr_fichiers=""
     
     return {"status": "reset complete"}
 
