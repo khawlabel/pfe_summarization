@@ -30,7 +30,7 @@ from numpy import dot
 from langchain.text_splitter import CharacterTextSplitter
 from langdetect import detect, DetectorFactory
 import json
-from prompts_v0_4 import *
+from prompts_v0_5 import *
 DetectorFactory.seed = 0  # Pour cohérence de détection de langue
 
 # Charger les variables d'environnement
@@ -229,13 +229,16 @@ async def start():
     llm2 = load_llm2()
 
     template = """
-    Tu es un assistant intelligent multilingue (français et arabe), spécialisé dans la *génération de questions uniquement* (pas de réponses) de type 5W1H à partir d’un texte.
+    Tu es un assistant intelligent multilingue (français et arabe), spécialisé dans la *génération de questions uniquement*
+    (pas de réponses) de type 5W1H à partir d’un texte.
 
     🎯 *Objectif :*
-    Analyser attentivement le texte fourni (le "contexte") et générer des *questions 5W1H* pertinentes, sans jamais proposer de réponses. La sortie doit être *strictement* un objet JSON, *sans aucun ajout ou explication*.
+    Analyser attentivement le texte fourni (le "contexte") et générer des *questions 5W1H* pertinentes, sans jamais proposer
+    de réponses. La sortie doit être *strictement* un objet JSON, *sans aucun ajout ou explication*.
 
     📘 *Définition des questions 5W1H* :
-    - *Qui (Who)* : Générer une question visant à identifier la personne ou l’entité principale ayant annoncé, initié ou soutenu  le fait principal.
+    - *Qui (Who)* : Générer une question visant à identifier la personne ou l’entité principale ayant annoncé, initié ou soutenu 
+      le fait principal.
     - *Quoi (What)* :  Générer une question visant à identifier l'evénement ou action principale décrite dans le texte.
     - *Quand (When)* :  Générer une question visant à identifier le moment ou date de l’événement.
     - *Où (Where)* :  Générer une question visant à identifier le lieu où s’est déroulé l’événement.
@@ -456,9 +459,6 @@ async def start():
     app.state.context={}
     app.state.bm25_retriever={}
     app.state.nbr_fichiers=""
-@app.get("/")
-def read_root():
-    return {"message": "Hello World"}
 
 @app.post("/upload_and_store_file")
 async def upload_and_store_file(
@@ -474,6 +474,7 @@ async def upload_and_store_file(
 
     results = []
     nbr=0
+    all_contexts = []
     for f in file:
         nbr=nbr+1
         try:
@@ -482,7 +483,6 @@ async def upload_and_store_file(
             file_name = f.filename
 
             file_bytes = await f.read()
-            all_contexts = []
 
             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
                 temp_file.write(file_bytes)
