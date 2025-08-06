@@ -417,11 +417,16 @@ async def start():
     chain = prompt_5w1h | llm1 | StrOutputParser()
     contxtualisation_chain = prompt_contxtualisation | llm1 | StrOutputParser()
     answer_chain = prompt_answer | llm1 | StrOutputParser()
-    chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm1 | StrOutputParser())
-    chain_traduction_titre  = ({"titre_francais": itemgetter("titre_francais")} | prompt_traduction_titre | llm2 | StrOutputParser())
-    chain_traduction_resume  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction_resume | llm2 | StrOutputParser())
-    chain_chat = ({"context": itemgetter("context"),"chat_history": itemgetter("chat_history"), "question": itemgetter("question")} | prompt_chat | llm2 | StrOutputParser())
-    chain_titre = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre | llm2 | StrOutputParser())
+    chain_resumer = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_resumer | llm1 | 
+                     StrOutputParser())
+    chain_traduction_titre  = ({"titre_francais": itemgetter("titre_francais")} | prompt_traduction_titre | llm2 | 
+                               StrOutputParser())
+    chain_traduction_resume  = ({"resume_francais": itemgetter("resume_francais")} | prompt_traduction_resume | llm2 | 
+                                StrOutputParser())
+    chain_chat = ({"context": itemgetter("context"),"chat_history": itemgetter("chat_history"), 
+                   "question": itemgetter("question")} | prompt_chat | llm2 | StrOutputParser())
+    chain_titre = ({"context": itemgetter("context"), "language": itemgetter("language")} | prompt_titre | llm2 | 
+                   StrOutputParser())
     chain_resumer_support = (
             {
                 "summary": itemgetter("summary"),
@@ -459,7 +464,7 @@ async def start():
     app.state.context={}
     app.state.bm25_retriever={}
     app.state.nbr_fichiers=""
-
+    
 @app.post("/upload_and_store_file")
 async def upload_and_store_file(
     file: List[UploadFile] = File(...),
@@ -567,7 +572,6 @@ async def upload_and_store_file(
     except Exception as e:
         raise ValueError(f"❌ Erreur pendant la génération des questions : {e}")
 
-
     parsed = app.state.questions_json
     retriever_bm25 = app.state.bm25_retriever
     context=[]
@@ -617,7 +621,7 @@ async def upload_and_store_file(
     })
 
 @app.post("/chat")
-async def chat_stream(data: ChatRequest):
+async def chat(data: ChatRequest):
     user_id = "123"
     user_input = data.user_input
 
@@ -652,21 +656,14 @@ async def chat_stream(data: ChatRequest):
     raw_chunk = "\n\n".join(context_chunks)
 
 
-    # Fonction de génération en streaming
-    def generate_stream():
-        full_response = ""
-        for chunk in app.state.chain_chat.stream({
+    chat_response = app.state.chain_chat.incoke({
             "context": raw_chunk,
             "chat_history": chat_history_text,
             "question": f"User: {user_input}\nAssistant:"
-        }):
-            if chunk:
-                full_response += chunk
-                yield chunk
-        # Enregistrement de la réponse complète dans l'historique
-        app.state.user_histories[user_id].append({"role": "assistant", "content": full_response})
+        })
+    app.state.user_histories[user_id].append({"role": "assistant", "content": chat_response})
 
-    return StreamingResponse(generate_stream(), media_type="text/event-stream")
+    return chat_response
 
 
 @app.get("/reset")
@@ -693,7 +690,7 @@ async def reset_app_state():
 
 
 @app.get("/generate_summary_fr")
-async def generate_summary_stream():
+async def generate_summary_fr():
 
     resume = app.state.chain_resumer.invoke({"context": app.state.context, "language": "francais"})
 
@@ -702,56 +699,50 @@ async def generate_summary_stream():
     if resultats:
         support1 = resultats[0][0]
         support2 = resultats[1][0] if len(resultats) > 1 else ""
-        def full_stream():
-            complete_resume = ""
-            for chunk in app.state.chain_resumer_support.stream({
-            "summary": resume,
-            "support_summary_1": support1,
-            "support_summary_2": support2
-             }):
-                complete_resume += chunk
-                yield chunk
-            app.state.resume_fr=complete_resume
-        return StreamingResponse(full_stream(), media_type="text/event-stream")
+
+        complete_resume = app.state.chain_resumer_support.invoke({
+        "summary": resume,
+        "support_summary_1": support1,
+        "support_summary_2": support2
+            })
+        
+        app.state.resume_fr=complete_resume
+
+        return complete_resume
 
 
 @app.get("/generate_titre_fr")
-async def generate_titre_stream():
+async def generate_titre_fr():
 
-    def full_stream():
-        titre = ""
-        for chunk in app.state.chain_titre.stream({"context": app.state.context, "language": "francais"}):
-            titre += chunk
-            yield chunk
-        app.state.titre_fr = titre
 
-    return StreamingResponse(full_stream(), media_type="text/event-stream")
+    titre_fr = app.state.chain_titre.invoke({"context": app.state.context, "language": "francais"})
+
+    app.state.titre_fr = titre_fr
+
+    return titre_fr
 
 
 
 @app.get("/generate_summary_ar")
-async def generate_titre_stream():
+async def generate_summary_ar():
 
     while not app.state.resume_fr:
         await asyncio.sleep(0.5)  # vérifie toutes les 500 ms
 
-    def full_stream():
-        for chunk in app.state.chain_traduction_resume.stream({"resume_francais": app.state.resume_fr}):
-            yield chunk 
-    return StreamingResponse(full_stream(), media_type="text/event-stream")
+    summary_ar = app.state.chain_traduction_resume.invoke({"resume_francais": app.state.resume_fr})
+ 
+    return summary_ar
 
 
 @app.get("/generate_titre_ar")
-async def generate_titre_stream():
+async def generate_titre_ar():
 
     while not app.state.titre_fr:
         await asyncio.sleep(0.5)  # vérifie toutes les 500 ms
 
-    def full_stream():
-        for chunk in app.state.chain_traduction_titre.stream({"titre_francais": app.state.titre_fr}):
-            yield chunk 
-    return StreamingResponse(full_stream(), media_type="text/event-stream")
+    titre_ar = app.state.chain_traduction_titre.invoke({"titre_francais": app.state.titre_fr})
 
+    return titre_ar
 
 
 @app.post("/register")
