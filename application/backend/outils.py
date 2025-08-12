@@ -234,11 +234,22 @@ def extract_text(file_path):
 
     if file_path_.endswith(".pdf"):
         detected_lang = detect_language_from_pdf(file_path)
-        return clean_text_extracted_from_pdf(file_path,detected_lang)
+        return clean_text_with_llm(file_path,detected_lang)
 
     elif file_path_.endswith((".mp3", ".wav", ".ogg", ".flac", ".m4a",".mp4", ".avi", ".mov", ".mkv")):
         return extract_text_from_audio_video(file_path)
+    
+    elif file_path_.endswith((".png", ".jpg", ".jpeg", ".bmp", ".tiff")):
+        # on détecte la langue comme pour le PDF
+        image = cv2.imread(file_path)
+        temp_text = pytesseract.image_to_string(image, lang="fra+ara")
+        langs = detect_langs(temp_text)
+        lang = "fr"
+        for l in langs:
+            if l.lang == "ar" and l.prob > 0.6:
+                lang = "ar"
+                break
+        return clean_text_with_llm(file_path, lang)
 
     else:
-        raise ValueError("Format non supporté")
-    
+        raise ValueError("Format non supporté")
