@@ -17,6 +17,8 @@ from typing import Optional
 import tempfile
 from prompts_v0_4 import *
 from constants import *
+from langchain_ollama import OllamaLLM
+
 
 
 MODEL_EMBEDDING = os.path.join(os.path.dirname(__file__), "./multilingual-e5-small")
@@ -42,6 +44,9 @@ def load_llm1():
 
 def load_llm2():
     return ChatGroq(groq_api_key=GROQ_API_KEY_2, model_name=LLM_NAME_4)
+
+def get_llm(llm_name):
+    return OllamaLLM(model=llm_name)
 
 
 
