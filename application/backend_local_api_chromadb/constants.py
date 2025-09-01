@@ -6,16 +6,12 @@ import platform
 # Charger les variables d'environnement
 loaded = load_dotenv()
 
-# Récupérer les clés API de manière sécurisée
-QDRANT_API = os.getenv('QDRANT_API')
-QDRANT_URL = os.getenv('QDRANT_URL')
-
 GROQ_API_KEY_1 = os.getenv('GROQ_API_KEY_1')
 GROQ_API_KEY_2 = os.getenv('GROQ_API_KEY_2')
 GROQ_API_KEY_3 = os.getenv('GROQ_API_KEY_3')
 
-QDRANT_COLLECTION = os.getenv('QDRANT_COLLECTION')
-QDRANT_COLLECTION_SUPPORT_4= os.getenv('QDRANT_COLLECTION_SUPPORT_4')
+CHROMADB_COLLECTION = os.getenv('CHROMADB_COLLECTION')
+CHROMADB_COLLECTION_SUPPORT_4= os.getenv('CHROMADB_COLLECTION_SUPPORT_4')
 
 
 # Modèles utilisés
